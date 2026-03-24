@@ -227,3 +227,95 @@ describe('DELETE /api/habits/:id', () => {
     expect(res.statusCode).toBe(204)
   })
 })
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+
+describe('Rate limiting', () => {
+  test('returns 429 after exceeding the request limit', async () => {
+    const { app } = makeApp()
+    // Hit the limiter: 200 allowed, 201st should be rejected
+    const requests = Array.from({ length: 201 }, () =>
+      request(app).get('/api/habits')
+    )
+    const responses = await Promise.all(requests)
+    const blocked = responses.filter((r) => r.statusCode === 429)
+    expect(blocked.length).toBeGreaterThan(0)
+    expect(blocked[0].body.error).toMatch(/too many requests/i)
+  })
+
+  test('allows requests up to the limit', async () => {
+    const { app } = makeApp()
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, () => request(app).get('/api/habits'))
+    )
+    expect(responses.every((r) => r.statusCode === 200)).toBe(true)
+  })
+})
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+
+describe('CORS', () => {
+  test('allows requests from a configured origin', async () => {
+    const { app } = makeApp()
+    const res = await request(app)
+      .get('/api/habits')
+      .set('Origin', 'http://localhost:5173')
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:5173')
+  })
+
+  test('blocks requests from an unknown origin', async () => {
+    const { app } = makeApp()
+    const res = await request(app)
+      .get('/api/habits')
+      .set('Origin', 'https://evil.example.com')
+    // Either no ACAO header or an error status
+    const isBlocked =
+      !res.headers['access-control-allow-origin'] ||
+      res.statusCode >= 400 ||
+      res.headers['access-control-allow-origin'] !== 'https://evil.example.com'
+    expect(isBlocked).toBe(true)
+  })
+
+  test('allows same-origin requests (no Origin header)', async () => {
+    const { app } = makeApp()
+    const res = await request(app).get('/api/habits')
+    expect(res.statusCode).toBe(200)
+  })
+
+  test('allows custom origin via ALLOWED_ORIGINS env var', async () => {
+    const original = process.env.ALLOWED_ORIGINS
+    process.env.ALLOWED_ORIGINS = 'https://myapp.example.com'
+    const { createApp } = require('../app')
+    const dataFile = makeTempDataFile()
+    fs.writeFileSync(dataFile, JSON.stringify({ habits: [], logs: {} }), 'utf-8')
+    const customApp = createApp({ dataFile })
+
+    const res = await request(customApp)
+      .get('/api/habits')
+      .set('Origin', 'https://myapp.example.com')
+    expect(res.headers['access-control-allow-origin']).toBe('https://myapp.example.com')
+
+    process.env.ALLOWED_ORIGINS = original
+  })
+})
+
+// ── Body size limit ──────────────────────────────────────────────────────────
+
+describe('Body size limit', () => {
+  test('rejects requests with body larger than 10kb', async () => {
+    const { app } = makeApp()
+    const largeBody = { name: 'Read', frequency: 'daily', data: 'x'.repeat(11_000) }
+    const res = await request(app)
+      .post('/api/habits')
+      .send(largeBody)
+    expect(res.statusCode).toBe(413)
+  })
+
+  test('accepts requests within the body size limit', async () => {
+    const { app } = makeApp()
+    const res = await request(app)
+      .post('/api/habits')
+      .send({ name: 'Read', frequency: 'daily', color: '#000000' })
+    expect(res.statusCode).toBe(201)
+  })
+})

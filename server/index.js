@@ -1,3 +1,4 @@
+const path = require('path')
 const { createApp } = require('./app')
 // PORT=0 lets the OS assign an available port automatically
 const PORT =
@@ -5,7 +6,10 @@ const PORT =
     ? 4001
     : Number(process.env.PORT)
 
-const app = createApp()
+const dataFile = process.env.DATA_FILE
+  ? path.resolve(process.env.DATA_FILE)
+  : undefined
+const app = createApp(dataFile ? { dataFile } : {})
 
 const server = app.listen(PORT, () => {
   const address = server.address()
