@@ -4,12 +4,49 @@ const crypto = require('crypto')
 const fs = require('fs/promises')
 const path = require('path')
 
+// Simple in-memory rate limiter
+function createRateLimiter({ windowMs, max }) {
+  const hits = new Map()
+  setInterval(() => hits.clear(), windowMs).unref()
+  return (req, res, next) => {
+    const key = req.ip
+    const count = (hits.get(key) ?? 0) + 1
+    hits.set(key, count)
+    if (count > max) {
+      return res.status(429).json({ error: 'Too many requests, please slow down.' })
+    }
+    next()
+  }
+}
+
 function createApp(options = {}) {
   const dataFile = options.dataFile || path.join(__dirname, 'data.json')
 
   const app = express()
-  app.use(cors())
-  app.use(express.json())
+
+  // CORS — restrict to configured origins, default to localhost in development
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:5173', 'http://localhost:4173']
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. same-origin, curl)
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true)
+        } else {
+          callback(new Error(`Origin ${origin} not allowed by CORS`))
+        }
+      },
+    }),
+  )
+
+  // Limit body size to prevent memory exhaustion
+  app.use(express.json({ limit: '10kb' }))
+
+  // Rate limit: 200 requests per minute per IP
+  const limiter = createRateLimiter({ windowMs: 60_000, max: 200 })
+  app.use('/api', limiter)
 
   // Simple async mutex to prevent concurrent read-modify-write races
   let lock = Promise.resolve()
@@ -35,12 +72,15 @@ function createApp(options = {}) {
   // Validation helpers
   const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+  const HABIT_NAME_MAX = 100
 
   function validateHabit(body) {
     if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
       return 'name is required'
     }
-    if (body.name.length > 100) return 'name must be 100 chars or fewer'
+    if (body.name.length > HABIT_NAME_MAX) {
+      return `name must be ${HABIT_NAME_MAX} chars or fewer`
+    }
     if (!['daily', 'weekly'].includes(body.frequency)) {
       return 'frequency must be "daily" or "weekly"'
     }
@@ -51,8 +91,13 @@ function createApp(options = {}) {
   }
 
   app.get('/api/habits', async (_req, res) => {
-    const data = await readData()
-    res.json(data)
+    try {
+      const data = await readData()
+      res.json(data)
+    } catch (err) {
+      console.error('[GET /api/habits]', err)
+      res.status(500).json({ error: 'Failed to read habits' })
+    }
   })
 
   app.post('/api/habits', async (req, res) => {
@@ -68,12 +113,17 @@ function createApp(options = {}) {
       archived: false,
     }
 
-    await withLock(async () => {
-      const data = await readData()
-      data.habits = [habit, ...data.habits]
-      await writeData(data)
-    })
-    res.status(201).json(habit)
+    try {
+      await withLock(async () => {
+        const data = await readData()
+        data.habits = [habit, ...data.habits]
+        await writeData(data)
+      })
+      res.status(201).json(habit)
+    } catch (err) {
+      console.error('[POST /api/habits]', err)
+      res.status(500).json({ error: 'Failed to save habit' })
+    }
   })
 
   app.post('/api/logs/toggle', async (req, res) => {
@@ -85,41 +135,56 @@ function createApp(options = {}) {
       return res.status(400).json({ error: 'date must be YYYY-MM-DD' })
     }
 
-    let updated
-    await withLock(async () => {
-      const data = await readData()
-      const existing = data.logs[habitId] || []
-      updated = existing.includes(date)
-        ? existing.filter((d) => d !== date)
-        : [...existing, date]
-      data.logs[habitId] = updated
-      await writeData(data)
-    })
-    res.json({ habitId, dates: updated })
+    try {
+      let updated
+      await withLock(async () => {
+        const data = await readData()
+        const existing = data.logs[habitId] || []
+        updated = existing.includes(date)
+          ? existing.filter((d) => d !== date)
+          : [...existing, date]
+        data.logs[habitId] = updated
+        await writeData(data)
+      })
+      res.json({ habitId, dates: updated })
+    } catch (err) {
+      console.error('[POST /api/logs/toggle]', err)
+      res.status(500).json({ error: 'Failed to toggle log' })
+    }
   })
 
   app.post('/api/habits/:id/archive', async (req, res) => {
     const { id } = req.params
-    await withLock(async () => {
-      const data = await readData()
-      data.habits = data.habits.map((h) =>
-        h.id === id ? { ...h, archived: true } : h,
-      )
-      await writeData(data)
-    })
-    res.json({ id })
+    try {
+      await withLock(async () => {
+        const data = await readData()
+        data.habits = data.habits.map((h) =>
+          h.id === id ? { ...h, archived: true } : h,
+        )
+        await writeData(data)
+      })
+      res.json({ id })
+    } catch (err) {
+      console.error('[POST /api/habits/:id/archive]', err)
+      res.status(500).json({ error: 'Failed to archive habit' })
+    }
   })
 
   app.delete('/api/habits/:id', async (req, res) => {
     const { id } = req.params
-    await withLock(async () => {
-      const data = await readData()
-      data.habits = data.habits.filter((h) => h.id !== id)
-      const { [id]: _removed, ...restLogs } = data.logs
-      data.logs = restLogs
-      await writeData(data)
-    })
-    res.status(204).end()
+    try {
+      await withLock(async () => {
+        const data = await readData()
+        data.habits = data.habits.filter((h) => h.id !== id)
+        const { [id]: _removed, ...restLogs } = data.logs
+        data.logs = restLogs
+        await writeData(data)
+      })
+      res.status(204).end()
+    } catch (err) {
+      console.error('[DELETE /api/habits/:id]', err)
+      res.status(500).json({ error: 'Failed to delete habit' })
+    }
   })
 
   return app

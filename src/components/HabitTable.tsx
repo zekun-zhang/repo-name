@@ -6,6 +6,8 @@ type Props = {
   logs: HabitLog
   past14Days: string[]
   today: string
+  archivingId: string | null
+  deletingId: string | null
   onToggle: (habitId: string, date: string) => void
   onArchive: (habitId: string) => void
   onDelete: (habitId: string) => void
@@ -16,6 +18,8 @@ export function HabitTable({
   logs,
   past14Days,
   today,
+  archivingId,
+  deletingId,
   onToggle,
   onArchive,
   onDelete,
@@ -40,21 +44,28 @@ export function HabitTable({
         <span className="hint">Tap today to check in</span>
       </div>
       <div className="habits-table-wrapper">
-        <table className="habits-table">
+        <table className="habits-table" aria-label="Habit tracker">
           <thead>
             <tr>
-              <th>Habit</th>
-              <th>Streak</th>
-              <th colSpan={past14Days.length}>Last 14 days</th>
-              <th />
+              <th scope="col">Habit</th>
+              <th scope="col">Streak</th>
+              <th scope="col" colSpan={past14Days.length}>Last 14 days</th>
+              <th scope="col" />
             </tr>
             <tr>
               <th />
               <th />
               {past14Days.map((d) => {
-                const dateObj = new Date(d)
-                const label = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`
-                return <th key={d}>{label}</th>
+                const dateObj = new Date(d + 'T00:00:00')
+                const label = dateObj.toLocaleDateString(undefined, {
+                  month: 'numeric',
+                  day: 'numeric',
+                })
+                return (
+                  <th key={d} scope="col" aria-label={d}>
+                    {label}
+                  </th>
+                )
               })}
               <th />
             </tr>
@@ -67,6 +78,8 @@ export function HabitTable({
                 dates={logs[habit.id] ?? []}
                 past14Days={past14Days}
                 today={today}
+                archivingId={archivingId}
+                deletingId={deletingId}
                 onToggle={onToggle}
                 onArchive={onArchive}
                 onDelete={onDelete}

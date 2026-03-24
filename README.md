@@ -1,73 +1,87 @@
-# React + TypeScript + Vite
+# Habit Garden
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A habit tracking app with a React/TypeScript frontend and an Express backend.
 
-Currently, two official plugins are available:
+## Getting started
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Prerequisites
+- Node.js 18+
 
-## React Compiler
+### Install dependencies
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Root (frontend)
+npm install
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Backend
+cd server && npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Run in development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+# From the repo root — starts both frontend and backend concurrently
+npm run dev
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Frontend: http://localhost:5173
+- API: http://localhost:4001
+
+### Build for production
+
+```bash
+npm run build
+```
+
+---
+
+## Project structure
+
+```
+/
+├── src/                  # React/TypeScript frontend
+│   ├── components/       # UI components
+│   ├── hooks/            # Custom React hooks
+│   ├── api.ts            # API client
+│   ├── constants.ts      # Shared constants
+│   ├── types.ts          # TypeScript types
+│   └── utils.ts          # Utility functions
+├── server/               # Express API
+│   ├── app.js            # Express app & routes
+│   ├── index.js          # Server entry point
+│   ├── data.json         # JSON data store
+│   └── __tests__/        # Jest tests
+└── .env.example          # Environment variable reference
+```
+
+---
+
+## API endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/habits` | Fetch all habits and logs |
+| `POST` | `/api/habits` | Create a habit |
+| `POST` | `/api/habits/:id/archive` | Archive a habit |
+| `DELETE` | `/api/habits/:id` | Delete a habit and its logs |
+| `POST` | `/api/logs/toggle` | Toggle a log entry for a date |
+
+---
+
+## Environment variables
+
+Copy `.env.example` and adjust as needed:
+
+```bash
+cp .env.example .env
+```
+
+See `.env.example` for all available variables.
+
+---
+
+## Running tests
+
+```bash
+cd server && npm test
 ```

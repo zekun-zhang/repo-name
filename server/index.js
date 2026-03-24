@@ -1,5 +1,5 @@
 const { createApp } = require('./app')
-// PORT=0 代表让系统自动分配一个可用端口
+// PORT=0 lets the OS assign an available port automatically
 const PORT =
   process.env.PORT === undefined || process.env.PORT === ''
     ? 4001

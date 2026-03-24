@@ -325,6 +325,42 @@ body {
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-box {
+  background: #0f172a;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 360px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.modal-message {
+  margin: 0;
+  font-size: 14px;
+  color: #e5e7eb;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .loading-state,
 .error-state {
   display: flex;

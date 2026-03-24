@@ -1,3 +1,5 @@
+import { MAX_STREAK_ITERATIONS } from './constants'
+
 export function generateId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
@@ -24,7 +26,7 @@ export function calculateStreak(dates: string[], frequency: 'daily' | 'weekly'):
   const cursor = new Date(todayISO())
   let streak = 0
 
-  for (;;) {
+  for (let i = 0; i < MAX_STREAK_ITERATIONS; i++) {
     const dayStr = cursor.toISOString().slice(0, 10)
     if (!sorted.includes(dayStr)) break
     streak += 1
@@ -49,7 +51,7 @@ function calculateWeeklyStreak(dates: string[]): number {
   const cursor = new Date(todayISO())
   let streak = 0
 
-  for (;;) {
+  for (let i = 0; i < MAX_STREAK_ITERATIONS; i++) {
     const weekKey = getISOWeek(cursor.toISOString().slice(0, 10))
     if (!weeks.has(weekKey)) break
     streak += 1

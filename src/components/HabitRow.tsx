@@ -6,6 +6,8 @@ type Props = {
   dates: string[]
   past14Days: string[]
   today: string
+  archivingId: string | null
+  deletingId: string | null
   onToggle: (habitId: string, date: string) => void
   onArchive: (habitId: string) => void
   onDelete: (habitId: string) => void
@@ -16,6 +18,8 @@ export function HabitRow({
   dates,
   past14Days,
   today,
+  archivingId,
+  deletingId,
   onToggle,
   onArchive,
   onDelete,
@@ -26,6 +30,9 @@ export function HabitRow({
       ? `${streak} week${streak === 1 ? '' : 's'}`
       : `${streak} day${streak === 1 ? '' : 's'}`
 
+  const isArchiving = archivingId === habit.id
+  const isDeleting = deletingId === habit.id
+
   return (
     <tr>
       <td>
@@ -33,6 +40,7 @@ export function HabitRow({
           <span
             className="habit-color"
             style={{ backgroundColor: habit.color }}
+            aria-hidden="true"
           />
           <div>
             <div className="habit-name">{habit.name}</div>
@@ -43,7 +51,13 @@ export function HabitRow({
         </div>
       </td>
       <td>
-        <span className="streak-pill">{streakLabel}</span>
+        <span
+          className="streak-pill"
+          role="status"
+          aria-label={`Current streak: ${streakLabel}`}
+        >
+          {streakLabel}
+        </span>
       </td>
       {past14Days.map((d) => {
         const checked = dates.includes(d)
@@ -61,6 +75,7 @@ export function HabitRow({
                 .join(' ')}
               onClick={() => onToggle(habit.id, d)}
               aria-pressed={checked}
+              aria-label={`${habit.name} on ${d}${checked ? ', completed' : ''}`}
             >
               {checked ? '✓' : ''}
             </button>
@@ -73,15 +88,21 @@ export function HabitRow({
             type="button"
             className="ghost-button"
             onClick={() => onArchive(habit.id)}
+            disabled={isArchiving || isDeleting}
+            aria-label={`Archive ${habit.name}`}
+            aria-busy={isArchiving}
           >
-            Archive
+            {isArchiving ? 'Archiving…' : 'Archive'}
           </button>
           <button
             type="button"
             className="ghost-button danger"
             onClick={() => onDelete(habit.id)}
+            disabled={isArchiving || isDeleting}
+            aria-label={`Delete ${habit.name}`}
+            aria-busy={isDeleting}
           >
-            Delete
+            {isDeleting ? 'Deleting…' : 'Delete'}
           </button>
         </div>
       </td>
