@@ -1,0 +1,74 @@
+{
+  "habits": [
+    {
+      "id": "c2df242e-e94d-4b2b-9507-d06ecfcaaed0",
+      "name": "test123",
+      "frequency": "daily",
+      "color": "#6366f1",
+      "createdAt": "2026-03-16T07:29:53.057Z",
+      "archived": false
+    },
+    {
+      "id": "b525bfac-13e4-418e-8812-08a11dadd71b",
+      "name": "123",
+      "frequency": "daily",
+      "color": "#6366f1",
+      "createdAt": "2026-03-16T07:28:41.312Z",
+      "archived": false
+    },
+    {
+      "id": "fdee4beb-39f9-4d71-8da4-9a99cf580cba",
+      "name": "123",
+      "frequency": "daily",
+      "color": "#6366f1",
+      "createdAt": "2026-03-16T07:23:00.669Z",
+      "archived": false
+    },
+    {
+      "id": "ed228adb-731a-45ec-ab95-bd17ccee53b8",
+      "name": "test",
+      "frequency": "daily",
+      "color": "#6366f1",
+      "createdAt": "2026-03-16T07:22:55.002Z",
+      "archived": false
+    },
+    {
+      "id": "e69e09b7-3e01-4ac2-8020-353170433725",
+      "name": "test2",
+      "frequency": "daily",
+      "color": "#6366f1",
+      "createdAt": "2026-03-16T06:36:06.749Z",
+      "archived": false
+    },
+    {
+      "id": "1f36f770-9bbe-4701-a666-8f8e172ab45d",
+      "name": "test",
+      "frequency": "daily",
+      "color": "#6366f1",
+      "createdAt": "2026-03-16T06:36:02.815Z",
+      "archived": false
+    },
+    {
+      "id": "554164d2-cf81-43ba-a61c-3eaa8ab2b07f",
+      "name": "test",
+      "frequency": "daily",
+      "color": "#6366f1",
+      "createdAt": "2026-03-16T06:35:58.233Z",
+      "archived": false
+    },
+    {
+      "id": "7ff054df-d8ea-4efb-8f3c-9fcf0726b132",
+      "name": "test",
+      "frequency": "daily",
+      "color": "#6366f1",
+      "createdAt": "2026-03-16T06:35:49.250Z",
+      "archived": false
+    }
+  ],
+  "logs": {
+    "c2df242e-e94d-4b2b-9507-d06ecfcaaed0": [],
+    "b525bfac-13e4-418e-8812-08a11dadd71b": [
+      "2026-03-16"
+    ]
+  }
+}
