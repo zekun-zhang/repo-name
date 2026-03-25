@@ -66,6 +66,8 @@ function createApp(options = {}) {
       color: req.body.color || '#6366f1',
       createdAt: req.body.createdAt || new Date().toISOString(),
       archived: false,
+      category: req.body.category || '',
+      order: typeof req.body.order === 'number' ? req.body.order : 0,
     }
 
     await withLock(async () => {
@@ -120,6 +122,40 @@ function createApp(options = {}) {
       await writeData(data)
     })
     res.status(204).end()
+  })
+
+  app.patch('/api/habits/reorder', async (req, res) => {
+    const { orderedIds } = req.body
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ error: 'orderedIds must be an array' })
+    }
+    await withLock(async () => {
+      const data = await readData()
+      const orderMap = {}
+      orderedIds.forEach((id, i) => { orderMap[id] = i })
+      data.habits = data.habits.map((h) =>
+        orderMap[h.id] !== undefined ? { ...h, order: orderMap[h.id] } : h,
+      )
+      await writeData(data)
+    })
+    res.json({ ok: true })
+  })
+
+  app.patch('/api/habits/:id', async (req, res) => {
+    const { id } = req.params
+    const updates = {}
+    if (typeof req.body.category === 'string') updates.category = req.body.category
+    if (typeof req.body.name === 'string' && req.body.name.trim()) updates.name = req.body.name.trim()
+    if (typeof req.body.order === 'number') updates.order = req.body.order
+
+    await withLock(async () => {
+      const data = await readData()
+      data.habits = data.habits.map((h) =>
+        h.id === id ? { ...h, ...updates } : h,
+      )
+      await writeData(data)
+    })
+    res.json({ id, ...updates })
   })
 
   return app

@@ -7,6 +7,8 @@ export type Habit = {
   color: string
   createdAt: string
   archived: boolean
+  category: string
+  order: number
 }
 
 export type HabitLog = {

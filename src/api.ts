@@ -36,3 +36,19 @@ export async function deleteHabit(habitId: string): Promise<void> {
     method: 'DELETE',
   })
 }
+
+export async function reorderHabits(orderedIds: string[]): Promise<void> {
+  await fetch(`${API_BASE}/api/habits/reorder`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderedIds }),
+  })
+}
+
+export async function updateHabit(habitId: string, updates: { category?: string; name?: string; order?: number }): Promise<void> {
+  await fetch(`${API_BASE}/api/habits/${habitId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
+}

@@ -9,6 +9,7 @@ export function useHabits() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
 
   const showToast = useCallback((msg: string) => {
     setToast(msg)
@@ -28,12 +29,24 @@ export function useHabits() {
       })
   }, [])
 
-  const activeHabits = useMemo(
-    () => habits.filter((h) => !h.archived),
-    [habits],
-  )
+  const activeHabits = useMemo(() => {
+    let filtered = habits.filter((h) => !h.archived)
+    if (categoryFilter) {
+      filtered = filtered.filter((h) => h.category === categoryFilter)
+    }
+    return filtered.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  }, [habits, categoryFilter])
 
-  function addHabit(name: string, frequency: Frequency, color: string) {
+  const categories = useMemo(() => {
+    const cats = new Set<string>()
+    habits.filter((h) => !h.archived).forEach((h) => {
+      if (h.category) cats.add(h.category)
+    })
+    return Array.from(cats).sort()
+  }, [habits])
+
+  function addHabit(name: string, frequency: Frequency, color: string, category: string) {
+    const maxOrder = habits.reduce((max, h) => Math.max(max, h.order ?? 0), -1)
     const newHabit: Habit = {
       id: generateId(),
       name: name.trim(),
@@ -41,10 +54,12 @@ export function useHabits() {
       color,
       createdAt: new Date().toISOString(),
       archived: false,
+      category: category.trim(),
+      order: maxOrder + 1,
     }
 
     const prevHabits = habits
-    setHabits((prev) => [newHabit, ...prev])
+    setHabits((prev) => [...prev, newHabit])
 
     api.createHabit(newHabit).catch(() => {
       setHabits(prevHabits)
@@ -92,15 +107,53 @@ export function useHabits() {
     })
   }
 
+  function reorder(fromIndex: number, toIndex: number) {
+    const sorted = [...activeHabits]
+    const [moved] = sorted.splice(fromIndex, 1)
+    sorted.splice(toIndex, 0, moved)
+    const orderedIds = sorted.map((h) => h.id)
+
+    const prevHabits = habits
+    setHabits((prev) => {
+      const updated = [...prev]
+      orderedIds.forEach((id, i) => {
+        const idx = updated.findIndex((h) => h.id === id)
+        if (idx !== -1) updated[idx] = { ...updated[idx], order: i }
+      })
+      return updated
+    })
+
+    api.reorderHabits(orderedIds).catch(() => {
+      setHabits(prevHabits)
+      showToast('Failed to reorder habits.')
+    })
+  }
+
+  function updateCategory(habitId: string, category: string) {
+    const prevHabits = habits
+    setHabits((prev) =>
+      prev.map((h) => (h.id === habitId ? { ...h, category } : h)),
+    )
+    api.updateHabit(habitId, { category }).catch(() => {
+      setHabits(prevHabits)
+      showToast('Failed to update category.')
+    })
+  }
+
   return {
     habits: activeHabits,
     logs,
     loading,
     error,
     toast,
+    categories,
+    categoryFilter,
+    setCategoryFilter,
     addHabit,
     toggle,
     archive,
     remove,
+    reorder,
+    updateCategory,
   }
 }
