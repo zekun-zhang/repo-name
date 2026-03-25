@@ -1,101 +1,143 @@
-# Habit Garden — Feature Proposals & Backlog
+# Habit Garden - Feature Roadmap & Backlog
 
-## Current State Summary
-
-Habit Garden is a habit tracker with:
-- Create habits (daily/weekly, custom color)
-- 14-day visual completion grid
-- Streak tracking
-- Archive / delete habits
-- Toast notifications
-- Dark theme, responsive layout
-- File-based JSON persistence, Express API, React frontend
+> **Generated:** 2026-03-25
+> **Current State:** MVP with habit CRUD, daily/weekly tracking, streaks, 14-day history, archive/delete, dark theme, responsive layout, file-based JSON persistence, Express API, React frontend.
 
 ---
 
-## Proposed New Features
+## Priority Legend
 
-### Tier 1 — High Impact, Medium Effort
+| Priority | Meaning |
+|----------|---------|
+| P0 | High impact, low effort - do first |
+| P1 | High impact, medium effort |
+| P2 | Medium impact, worth building |
+| P3 | Nice-to-have / future exploration |
 
-#### 1. Categories & Tags
-**What:** Let users group habits into categories (e.g. Health, Work, Learning) and optionally tag them.
-**Why:** As the habit list grows, it becomes hard to scan. Categories enable filtering and give users a mental model for organizing their life areas. This is the #1 feature gap — every serious habit app has it.
+---
+
+## P0 - Quick Wins
+
+### 1. Unarchive Habits
+
+**What:** Allow users to restore archived habits back to the active list.
+**Why:** Currently archiving is a one-way action. Users who accidentally archive or want to resume an old habit have no way to recover it without directly editing `data.json`. This is a basic usability gap.
 **Scope:**
-- Add `category` field to Habit model (nullable string)
-- Category filter bar above the habit table
-- Optional color-coding per category (override or complement habit color)
-- API: `GET /api/categories` (derived from habits), filter param on `GET /api/habits`
+- Add `POST /api/habits/:id/unarchive` endpoint
+- Add "Archived" section at bottom of habit table (collapsible)
+- Add "Restore" button on archived habits
 
-#### 2. Statistics & Analytics Dashboard
-**What:** A dedicated stats view showing completion rates, streaks over time, best/worst days, and weekly/monthly summaries.
-**Why:** The current 14-day grid is great for quick glance but tells users nothing about long-term trends. Showing "you completed 85% of habits this month" is a proven motivator. Analytics turn raw data into insight.
+### 2. Habit Reordering (Manual Sort)
+
+**What:** Let users drag-and-drop or use up/down arrows to reorder habits.
+**Why:** Users naturally want their most important habits at the top. Currently order is insertion-based. Without reordering, the list becomes unwieldy as habits accumulate.
+**Scope:**
+- Add `order` field to habit schema (integer)
+- Add `PATCH /api/habits/reorder` endpoint (accepts array of IDs in new order)
+- Implement drag-and-drop (e.g. `@dnd-kit/core`) or arrow buttons in `HabitRow`
+
+### 3. Confirmation on Archive
+
+**What:** Add a confirmation dialog before archiving a habit (matching the existing delete confirmation).
+**Why:** Archive is currently a single-click action with no undo. Users can accidentally archive habits. Consistency with the delete flow.
+**Scope:**
+- Add `window.confirm()` call in archive handler (trivial)
+
+---
+
+## P1 - Core Enhancements
+
+### 4. Garden Visualization
+
+**What:** A visual garden/terrarium where each habit is represented as a plant. The plant grows taller and blooms as the streak increases. Wilting occurs when streaks break.
+**Why:** The app is called "Habit Garden" but has no garden metaphor in the UI. This is the defining differentiator from every other habit tracker. It turns abstract streak numbers into an emotional, visual reward system that taps into the same psychology as virtual pet games. Users will check in *to see their garden grow*, not just to check a box.
+**Scope:**
+- New `<Garden />` component with SVG/CSS plant illustrations
+- Plant stages: seed (0-2 days) -> sprout (3-6) -> growing (7-13) -> blooming (14-29) -> tree (30+)
+- Use each habit's color for its plant
+- Toggle between table view and garden view
+- Estimated effort: medium-large
+
+### 5. Statistics & Analytics Dashboard
+
+**What:** A dedicated stats panel showing completion rates, best streaks, weekly/monthly trends, and a GitHub-style contribution heatmap.
+**Why:** The current 14-day view is too narrow to see long-term progress. Users need to see that their effort compounds over time. Visualization of progress is one of the strongest motivators for habit formation (based on behavioral psychology research). Analytics turn raw data into insight.
 **Scope:**
 - New route `/stats` or slide-out panel
-- Completion rate per habit (7d, 30d, all-time)
-- Best streak ever (not just current)
-- Heatmap calendar (GitHub-style) for a selected habit
+- Completion rate per habit (last 7d, 30d, all-time)
+- Best streak ever vs current streak
+- Calendar heatmap (like GitHub contributions) showing density of completions across all habits
 - Day-of-week breakdown (e.g. "You skip most habits on Fridays")
+- Simple bar/line chart for weekly completion trends
+- New `<Dashboard />` component, possibly with a lightweight chart library (e.g., recharts or pure SVG)
 
-#### 3. Habit Reordering (Drag & Drop)
-**What:** Let users drag habits to reorder them in the table.
-**Why:** Currently habits are in creation order. Users want their most important habits at the top. Manual ordering is a basic UX expectation for list-based apps.
-**Scope:**
-- Add `order` field to Habit model (integer)
-- Use a lightweight drag-and-drop library (e.g. `@dnd-kit/core`)
-- API: `PATCH /api/habits/reorder` (accepts array of IDs in new order)
+### 6. Habit Categories / Tags
 
-#### 4. Reminders / Notification System
-**What:** Optional daily reminder for incomplete habits, delivered via browser notification or email digest.
-**Why:** The biggest reason people stop tracking habits is forgetting to open the app. Push notifications are the standard solution. Even a simple browser notification at a user-chosen time dramatically improves retention.
+**What:** Allow users to tag habits with categories like "Health", "Productivity", "Learning", "Mindfulness", etc. Filter and group the table by category.
+**Why:** As the habit list grows (5+), the flat list becomes hard to scan. Categories create mental grouping and let users focus on one life area at a time. This is the #1 feature gap - every serious habit app has it. It also enables future features like per-category stats.
 **Scope:**
-- Browser Notification API integration (permission prompt)
-- User-configurable reminder time (stored in localStorage or user profile)
-- Service worker for background notifications
-- Stretch: email digest via a simple cron job
+- Add `category` field to habit schema (string, optional)
+- Predefined categories + custom option
+- Category filter bar above the habit table
+- Color-coded category badges in habit rows
+- Migration: existing habits default to "Uncategorized"
+- API: `GET /api/categories` (derived from habits), filter param on `GET /api/habits`
+
+### 7. Edit Habit
+
+**What:** Allow editing a habit's name, frequency, color, and category after creation.
+**Why:** Users currently cannot fix typos, change colors, or switch frequency without deleting and recreating. This loses all historical log data. Editing is a fundamental CRUD operation that's missing.
+**Scope:**
+- `PUT /api/habits/:id` endpoint
+- Inline edit mode or modal form in `HabitRow`
+- Validation same as create
 
 ---
 
-### Tier 2 — Medium Impact, Lower Effort
+## P2 - Engagement & Retention
 
-#### 5. Notes / Journal on Completions
-**What:** When toggling a habit complete, optionally add a short note (e.g. "Ran 5km" or "Only 10 min today").
-**Why:** Bare checkmarks lose context. Adding notes turns habit tracking into a micro-journal, which helps users reflect on quality, not just quantity. It enriches the data for the stats dashboard too.
+### 8. Streak Shields (Forgiveness Days)
+
+**What:** Each habit gets 1-2 "shield" days per month where missing a day doesn't break the streak.
+**Why:** The #1 reason people abandon habit trackers is the "what the hell" effect - one missed day breaks a long streak, which feels devastating, so they give up entirely. Streak shields are a proven gamification pattern (used by Duolingo, Snapchat) that prevents this spiral. It acknowledges that life happens while still encouraging consistency.
 **Scope:**
-- Add optional `note` field to log entries (change logs from `string[]` to `{date, note?}[]`)
+- Add `shieldsPerMonth` and `shieldsUsed` fields
+- Modify streak calculation in `utils.ts` to skip shielded gaps
+- Visual indicator (shield icon) on days where a shield was auto-applied
+- Reset shield count monthly
+
+### 9. Notes / Micro-Journal on Completions
+
+**What:** Optional one-line note field when checking in a habit (e.g. "Ran 5km", "Read 20 pages"). Plus a random motivational quote on the header that rotates daily.
+**Why:** Bare checkmarks lose context. Adding notes turns habit tracking into a micro-journal, which helps users reflect on quality, not just quantity. It enriches the data for the stats dashboard too. The motivational quotes keep the landing screen fresh and emotionally engaging.
+**Scope:**
+- Add `notes` field to logs: `logs[habitId] = [{ date, note? }]` (breaking schema change, needs migration)
 - Click-to-expand on completed cells to view/edit note
 - API: extend `POST /api/logs/toggle` to accept optional `note` param
+- Static array of ~50 curated quotes, hash date to select one deterministically
 
-#### 6. Habit Templates / Presets
-**What:** Offer a library of common habit presets (e.g. "Drink 8 glasses of water", "Read 30 min", "Exercise") that users can add with one click.
-**Why:** New users face a blank screen. Templates reduce friction and inspire habit ideas. This is a quick win that improves onboarding significantly.
+### 10. Completion Celebrations
+
+**What:** Satisfying micro-animations and optional sounds when toggling a habit complete. Milestone celebrations at streak thresholds (7, 30, 100 days).
+**Why:** Immediate positive feedback is critical for habit reinforcement (the "reward" in the cue-routine-reward loop). A subtle confetti burst or checkmark animation makes each check-in feel rewarding rather than mechanical. Milestone celebrations mark progress and create shareable moments.
 **Scope:**
-- Static JSON file with 15-20 preset habits (name, frequency, suggested color)
-- "Browse Templates" button in HabitForm
-- Modal/dropdown showing templates grouped by category
-- One-click add (pre-fills the form)
+- CSS animation on check-in (scale + color pulse)
+- Confetti effect at milestones (canvas-confetti library, ~3KB)
+- Toast message: "7-day streak on Meditate!"
+- Sound toggle in settings (default off)
 
-#### 7. Data Export & Import
-**What:** Export all habit data as JSON or CSV. Import from a file.
-**Why:** Users want data portability. Export also serves as manual backup since the app uses file-based storage. This builds trust — users know their data isn't locked in.
+### 11. Light / Dark Theme Toggle
+
+**What:** Add a theme switcher. Currently hardcoded to dark theme.
+**Why:** Dark theme is great, but some users prefer light mode, especially during daytime or for accessibility reasons. Theme preference is table-stakes for modern apps.
 **Scope:**
-- API: `GET /api/export` returns full data.json
-- API: `POST /api/import` validates and replaces/merges data
-- Frontend: Export button (downloads file), Import button (file picker with confirmation)
+- CSS custom properties for theming (refactor hardcoded colors)
+- Theme toggle button in header
+- Persist preference to localStorage
+- Respect `prefers-color-scheme` system setting as default
 
-#### 8. Dark/Light Theme Toggle
-**What:** Add a light theme and a toggle switch.
-**Why:** The current dark theme is well-designed but some users prefer light mode, especially during daytime. Theme preference is table-stakes for modern apps.
-**Scope:**
-- CSS variables for theme colors (already partially structured)
-- Toggle component in header
-- Persist preference in localStorage
-- `prefers-color-scheme` media query for auto-detection
+### 12. Gamification: Points, Levels & Badges
 
----
-
-### Tier 3 — Nice to Have / Stretch Goals
-
-#### 9. Gamification: Points, Levels & Badges
 **What:** Award points for completions, bonus for streaks, and unlock badges (e.g. "7-day streak", "100 completions", "Perfect week").
 **Why:** Gamification taps into intrinsic motivation. Badges give users milestone celebrations. This is what separates a tool from an experience. Pairs naturally with the existing streak system.
 **Scope:**
@@ -105,17 +147,51 @@ Habit Garden is a habit tracker with:
 - Badge display in header/profile area
 - Celebration animation on badge unlock
 
-#### 10. Multi-Device Sync (User Accounts)
-**What:** Replace file-based storage with a database and add user authentication, enabling cross-device sync.
-**Why:** The file-based JSON storage is the biggest architectural limitation. Moving to a real DB with auth unlocks multi-user support, mobile access, and production readiness. This is the natural evolution path.
-**Scope:**
-- SQLite or PostgreSQL database (replace data.json)
-- Auth: simple email/password or OAuth (Google)
-- Session management (JWT or cookie-based)
-- Migration script for existing data.json users
-- This is a large effort — likely a separate milestone
+### 13. PWA Support (Installable App)
 
-#### 11. Habit Chaining / Dependencies
+**What:** Add a service worker and web manifest so the app can be installed on mobile home screens and work offline.
+**Why:** Habit tracking is inherently mobile-first - users check in throughout the day. A PWA removes the friction of opening a browser and navigating to a URL. Offline support means check-ins work on planes, subways, etc. and sync when back online.
+**Scope:**
+- `manifest.json` with icons and theme colors
+- Service worker for caching static assets
+- Offline queue for API calls (sync on reconnect)
+- Vite PWA plugin simplifies setup significantly
+
+---
+
+## P3 - Future Exploration
+
+### 14. Habit Templates Library
+
+**What:** Pre-built habit packs like "Morning Routine" (meditate, exercise, journal, healthy breakfast) or "Developer Growth" (read docs, side project, leetcode).
+**Why:** Reduces friction for new users. Instead of staring at a blank form, they pick a template and customize. Templates also encode best practices for habit stacking.
+**Scope:**
+- Static JSON file with 15-20 preset habits (name, frequency, suggested color)
+- "Browse Templates" button in HabitForm
+- Modal/dropdown showing templates grouped by category
+- One-click add (pre-fills the form)
+
+### 15. Recurring Reminders (Browser Notifications)
+
+**What:** Optional push notifications at user-defined times reminding them to complete habits.
+**Why:** "Out of sight, out of mind" is the enemy of habit building. Timely reminders at the right moment (e.g., 7am for morning habits) dramatically increase completion rates.
+**Scope:**
+- Browser Notification API permission request
+- Per-habit reminder time setting
+- Service worker for scheduled notifications
+- Requires PWA support (#13) as prerequisite
+
+### 16. Data Export / Import
+
+**What:** Export all habits and logs as JSON or CSV. Import from file to restore or migrate.
+**Why:** Data portability builds trust. Users are more willing to invest in a tool when they know they can take their data with them. Also useful for backups.
+**Scope:**
+- `GET /api/export` endpoint returning full `data.json`
+- `POST /api/import` endpoint with validation
+- Download/upload buttons in a settings area
+
+### 17. Habit Chaining / Dependencies
+
 **What:** Define relationships between habits (e.g. "After Morning Run, do Stretching").
 **Why:** Habit stacking is a core concept from behavior science (James Clear's Atomic Habits). Allowing users to define chains helps them build routines, not just isolated habits.
 **Scope:**
@@ -123,13 +199,32 @@ Habit Garden is a habit tracker with:
 - Visual indicator showing chain order
 - Optional: auto-suggest next habit after completing one
 
-#### 12. Widget / Quick-Entry Mode
+### 18. Widget / Quick-Entry Mode
+
 **What:** A minimal, always-accessible view for quickly checking off today's habits without loading the full app.
 **Why:** Reducing friction for daily check-ins. A compact "today only" view loads faster and focuses attention. Could also be a browser extension or PWA shortcut.
 **Scope:**
-- New route `/today` — shows only today's habits as a simple checklist
-- PWA manifest for "Add to Home Screen"
+- New route `/today` - shows only today's habits as a simple checklist
 - Minimal CSS, fast load
+
+### 19. Accountability Sharing
+
+**What:** Generate a read-only shareable link showing your habit garden/stats for an accountability partner.
+**Why:** Social accountability is one of the strongest predictors of habit success. Knowing someone can see your progress increases follow-through.
+**Scope:**
+- Token-based read-only view generation
+- Public route that renders a simplified dashboard
+- Requires authentication groundwork (currently no auth)
+
+### 20. Multi-User Support & Authentication
+
+**What:** User accounts with login/signup so multiple people can use the same instance.
+**Why:** Currently single-user with a shared JSON file. Authentication is a prerequisite for sharing features, cloud sync, and any production deployment.
+**Scope:**
+- Large effort: auth system (JWT or OAuth), per-user data isolation, sessions
+- SQLite or PostgreSQL database (replace data.json)
+- Migration script for existing data.json users
+- Consider this only if the app moves toward a SaaS model
 
 ---
 
@@ -137,51 +232,78 @@ Habit Garden is a habit tracker with:
 
 | # | Feature | Effort | Impact | Priority |
 |---|---------|--------|--------|----------|
-| 1 | Categories & Tags | Medium | High | P0 — Next |
-| 2 | Habit Reordering | Small | High | P0 — Next |
-| 6 | Habit Templates | Small | Medium | P1 — Soon |
-| 8 | Dark/Light Theme Toggle | Small | Medium | P1 — Soon |
-| 5 | Notes on Completions | Medium | Medium | P1 — Soon |
-| 3 | Statistics Dashboard | Large | High | P2 — Planned |
-| 7 | Data Export & Import | Small | Medium | P2 — Planned |
-| 4 | Reminders / Notifications | Medium | High | P2 — Planned |
-| 9 | Gamification System | Large | Medium | P3 — Future |
-| 12 | Quick-Entry / Today View | Medium | Medium | P3 — Future |
-| 11 | Habit Chaining | Medium | Low | P3 — Future |
-| 10 | Multi-Device Sync (Auth + DB) | XL | High | P4 — Milestone |
+| 3 | Confirmation on Archive | Trivial | Medium | P0 |
+| 1 | Unarchive Habits | Small | High | P0 |
+| 7 | Edit Habit | Small | High | P0 |
+| 2 | Habit Reordering | Small | High | P0 |
+| 11 | Dark/Light Theme Toggle | Small | Medium | P1 |
+| 4 | Garden Visualization | Large | High | P1 |
+| 5 | Statistics Dashboard | Large | High | P1 |
+| 6 | Categories & Tags | Medium | High | P1 |
+| 10 | Completion Celebrations | Small | Medium | P2 |
+| 8 | Streak Shields | Medium | Medium | P2 |
+| 9 | Notes / Micro-Journal | Medium | Medium | P2 |
+| 14 | Habit Templates | Small | Medium | P2 |
+| 16 | Data Export & Import | Small | Medium | P2 |
+| 12 | Gamification System | Large | Medium | P2 |
+| 13 | PWA Support | Medium | High | P2 |
+| 15 | Reminders / Notifications | Medium | High | P3 |
+| 17 | Habit Chaining | Medium | Low | P3 |
+| 18 | Quick-Entry / Today View | Medium | Medium | P3 |
+| 19 | Accountability Sharing | Large | Medium | P3 |
+| 20 | Multi-Device Sync (Auth + DB) | XL | High | P3 |
 
 ---
 
-## Suggested Sprint Plan
+## Recommended Implementation Order
 
-### Sprint 1: Organization & Polish
-- [ ] Categories & Tags (#1)
-- [ ] Habit Reordering (#3)
-- [ ] Dark/Light Theme Toggle (#8)
+```
+Phase 1 - Polish (1-2 days)
+├── #3  Confirmation on Archive
+├── #1  Unarchive Habits
+├── #7  Edit Habit
+├── #2  Habit Reordering
+└── #11 Light/Dark Theme Toggle
 
-### Sprint 2: Depth & Onboarding
-- [ ] Habit Templates (#6)
-- [ ] Notes on Completions (#5)
-- [ ] Data Export & Import (#7)
+Phase 2 - Differentiator (3-5 days)
+├── #4  Garden Visualization  <- the signature feature
+├── #5  Statistics Dashboard
+├── #6  Habit Categories/Tags
+└── #10 Completion Celebrations
 
-### Sprint 3: Insights & Engagement
-- [ ] Statistics Dashboard (#2)
-- [ ] Reminders / Notifications (#4)
+Phase 3 - Retention (3-5 days)
+├── #8  Streak Shields
+├── #9  Notes / Micro-Journal
+├── #14 Habit Templates
+└── #16 Data Export/Import
 
-### Sprint 4: Delight
-- [ ] Gamification System (#9)
-- [ ] Quick-Entry / Today View (#12)
+Phase 4 - Platform (5+ days)
+├── #12 Gamification System
+├── #13 PWA Support
+├── #15 Recurring Reminders
+└── #18 Quick-Entry / Today View
 
-### Milestone: Production-Ready
-- [ ] Multi-Device Sync / Auth / DB migration (#10)
-- [ ] Habit Chaining (#11)
+Phase 5 - Social (future)
+├── #17 Habit Chaining
+├── #19 Accountability Sharing
+└── #20 Multi-User & Auth
+```
 
 ---
 
 ## Technical Debt to Address Alongside Features
 
-1. **No frontend tests** — Add React Testing Library tests before building new UI
-2. **No client-side routing** — Add React Router before adding `/stats` or `/today` routes
-3. **JSON file storage** — Works for single user but will need migration for any scale
-4. **No input sanitization on frontend** — Add before templates/import features
-5. **No API rate limiting** — Add before any public deployment
+1. **No frontend tests** - Add React Testing Library tests before building new UI
+2. **No client-side routing** - Add React Router before adding `/stats` or `/today` routes
+3. **JSON file storage** - Works for single user but will need migration for any scale
+4. **No input sanitization on frontend** - Add before templates/import features
+5. **No API rate limiting** - Add before any public deployment
+
+---
+
+## Architectural Notes
+
+- **Schema migrations:** Features #9 (notes) and #8 (shields) change the data shape. Add a `version` field to `data.json` and a migration function in `app.js` that runs on startup.
+- **State management:** As complexity grows past Phase 2, consider extracting state into a lightweight store (Zustand or React context + reducer) instead of a single `useHabits` hook.
+- **Component library:** The Garden visualization (#4) will benefit from SVG components. Consider a shared `src/components/icons/` directory.
+- **Testing:** Each new endpoint needs corresponding tests in `server/__tests__/api.test.js`. Frontend tests (React Testing Library) should be added starting Phase 2.
