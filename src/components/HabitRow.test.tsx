@@ -19,6 +19,7 @@ function renderRow(overrides = {}) {
   const props = {
     habit,
     dates: [TODAY],
+    logNotes: {},
     past14Days: [TODAY],
     today: TODAY,
     archivingId: null,
@@ -26,6 +27,7 @@ function renderRow(overrides = {}) {
     onToggle: vi.fn(),
     onArchive: vi.fn(),
     onDelete: vi.fn(),
+    onSaveNote: vi.fn(),
     ...overrides,
   }
   render(<table><tbody><HabitRow {...props} /></tbody></table>)
@@ -54,12 +56,12 @@ describe('HabitRow – rendering', () => {
     renderRow()
     const streak = screen.getByRole('status')
     expect(streak).toBeInTheDocument()
-    expect(streak.textContent).toContain('day')
+    expect(streak.textContent).toMatch(/\d/)
   })
 
   it('shows streak in weeks for weekly habit', () => {
     renderRow({ habit: { ...habit, frequency: 'weekly' } })
-    expect(screen.getByRole('status').textContent).toContain('week')
+    expect(screen.getByRole('status').textContent).toContain('wk')
   })
 
   it('marks the checked day cell with aria-pressed=true', () => {

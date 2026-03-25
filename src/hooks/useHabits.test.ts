@@ -17,7 +17,7 @@ const mockHabit: Habit = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(api.fetchHabits).mockResolvedValue({ habits: [mockHabit], logs: { h1: ['2026-03-24'] } })
+  vi.mocked(api.fetchHabits).mockResolvedValue({ habits: [mockHabit], logs: { h1: ['2026-03-24'] }, logNotes: {} })
   vi.mocked(api.createHabit).mockResolvedValue(mockHabit)
   vi.mocked(api.toggleLog).mockResolvedValue()
   vi.mocked(api.archiveHabit).mockResolvedValue()
@@ -50,7 +50,7 @@ describe('useHabits – retryLoad', () => {
   it('clears error and reloads on retryLoad', async () => {
     vi.mocked(api.fetchHabits)
       .mockRejectedValueOnce(new Error('down'))
-      .mockResolvedValueOnce({ habits: [mockHabit], logs: {} })
+      .mockResolvedValueOnce({ habits: [mockHabit], logs: {}, logNotes: {} })
 
     const { result } = renderHook(() => useHabits())
     await waitFor(() => expect(result.current.error).toBeTruthy())

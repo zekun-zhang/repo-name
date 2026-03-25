@@ -20,6 +20,7 @@ function stubHook(overrides: Partial<ReturnType<typeof useHabitsModule.useHabits
   vi.mocked(useHabitsModule.useHabits).mockReturnValue({
     habits: [mockHabit],
     logs: { h1: [] },
+    logNotes: {},
     loading: false,
     error: null,
     toast: null,
@@ -29,6 +30,8 @@ function stubHook(overrides: Partial<ReturnType<typeof useHabitsModule.useHabits
     toggle: vi.fn(),
     archive: vi.fn(),
     remove: vi.fn(),
+    reorder: vi.fn(),
+    saveNote: vi.fn(),
     retryLoad: vi.fn(),
     ...overrides,
   })

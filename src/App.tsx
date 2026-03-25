@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { useHabits } from './hooks/useHabits'
 import { HabitForm } from './components/HabitForm'
@@ -11,6 +11,7 @@ function App() {
   const {
     habits,
     logs,
+    logNotes,
     loading,
     error,
     toast,
@@ -20,6 +21,8 @@ function App() {
     toggle,
     archive,
     remove,
+    reorder,
+    saveNote,
     retryLoad,
   } = useHabits()
 
@@ -27,6 +30,20 @@ function App() {
   const past14Days = useMemo(() => generatePastNDays(DAYS_TO_SHOW, today), [today])
 
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+
+  // Theme management
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('habit-garden-theme') as 'dark' | 'light') ?? 'dark'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('habit-garden-theme', theme)
+  }, [theme])
+
+  function toggleTheme() {
+    setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
+  }
 
   function handleDelete(habitId: string) {
     setPendingDelete(habitId)
@@ -81,7 +98,18 @@ function App() {
           <h1>Habit Garden</h1>
           <p>Grow tiny daily habits into big changes.</p>
         </div>
-        <div className="today-pill" aria-label={`Today is ${today}`}>{today}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            type="button"
+            className="ghost-button theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === 'dark' ? '☀︎' : '☽'}
+          </button>
+          <div className="today-pill" aria-label={`Today is ${today}`}>{today}</div>
+        </div>
       </header>
 
       <main className="layout">
@@ -89,6 +117,7 @@ function App() {
         <HabitTable
           habits={habits}
           logs={logs}
+          logNotes={logNotes}
           past14Days={past14Days}
           today={today}
           archivingId={archivingId}
@@ -96,6 +125,8 @@ function App() {
           onToggle={toggle}
           onArchive={archive}
           onDelete={handleDelete}
+          onSaveNote={saveNote}
+          onReorder={reorder}
         />
       </main>
     </div>

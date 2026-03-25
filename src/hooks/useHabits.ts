@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Frequency, Habit, HabitLog } from '../types'
+import type { Frequency, Habit, HabitLog, LogNotes } from '../types'
 import { generateId, toggleDateInList } from '../utils'
 import { TOAST_DURATION_MS } from '../constants'
 import * as api from '../api'
@@ -7,6 +7,7 @@ import * as api from '../api'
 export function useHabits() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [logs, setLogs] = useState<HabitLog>({})
+  const [logNotes, setLogNotes] = useState<LogNotes>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -26,6 +27,7 @@ export function useHabits() {
       .then((data) => {
         setHabits(data.habits)
         setLogs(data.logs)
+        setLogNotes(data.logNotes ?? {})
         setLoading(false)
       })
       .catch(() => {
@@ -43,12 +45,20 @@ export function useHabits() {
     [habits],
   )
 
-  function addHabit(name: string, frequency: Frequency, color: string) {
+  function addHabit(
+    name: string,
+    frequency: Frequency,
+    color: string,
+    category?: string,
+    icon?: string,
+  ) {
     const newHabit: Habit = {
       id: generateId(),
       name: name.trim(),
       frequency,
       color,
+      ...(icon ? { icon } : {}),
+      ...(category ? { category: category.trim() } : {}),
       createdAt: new Date().toISOString(),
       archived: false,
     }
@@ -110,9 +120,42 @@ export function useHabits() {
       .finally(() => setDeletingId(null))
   }
 
+  function reorder(orderedIds: string[]) {
+    const prevHabits = habits
+    setHabits((prev) => {
+      const map = new Map(prev.map((h) => [h.id, h]))
+      const reordered = orderedIds.map((id) => map.get(id)).filter(Boolean) as Habit[]
+      const reorderedSet = new Set(orderedIds)
+      const rest = prev.filter((h) => !reorderedSet.has(h.id))
+      return [...reordered, ...rest]
+    })
+    api.reorderHabits(orderedIds).catch(() => {
+      setHabits(prevHabits)
+      showToast('Failed to save order.')
+    })
+  }
+
+  function saveNote(habitId: string, date: string, note: string) {
+    const prevNotes = logNotes
+    setLogNotes((prev) => {
+      const habitNotes = { ...(prev[habitId] ?? {}) }
+      if (note.trim()) {
+        habitNotes[date] = note.trim()
+      } else {
+        delete habitNotes[date]
+      }
+      return { ...prev, [habitId]: habitNotes }
+    })
+    api.saveLogNote(habitId, date, note).catch(() => {
+      setLogNotes(prevNotes)
+      showToast('Failed to save note.')
+    })
+  }
+
   return {
     habits: activeHabits,
     logs,
+    logNotes,
     loading,
     error,
     toast,
@@ -122,6 +165,8 @@ export function useHabits() {
     toggle,
     archive,
     remove,
+    reorder,
+    saveNote,
     retryLoad: loadHabits,
   }
 }

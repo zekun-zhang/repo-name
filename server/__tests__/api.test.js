@@ -30,7 +30,7 @@ describe('GET /api/habits', () => {
     const { app } = makeApp()
     const res = await request(app).get('/api/habits')
     expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ habits: [], logs: {} })
+    expect(res.body).toEqual({ habits: [], logs: {}, logNotes: {} })
   })
 
   test('returns existing habits from data file', async () => {
@@ -53,7 +53,7 @@ describe('GET /api/habits', () => {
 
     const res = await request(app).get('/api/habits')
     expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ habits: [], logs: {} })
+    expect(res.body).toEqual({ habits: [], logs: {}, logNotes: {} })
   })
 
   test('returns defaults when data file contains invalid JSON', async () => {
@@ -63,7 +63,7 @@ describe('GET /api/habits', () => {
 
     const res = await request(app).get('/api/habits')
     expect(res.statusCode).toBe(200)
-    expect(res.body).toEqual({ habits: [], logs: {} })
+    expect(res.body).toEqual({ habits: [], logs: {}, logNotes: {} })
   })
 })
 

@@ -17,6 +17,7 @@ const habit: Habit = {
 const defaultProps = {
   habits: [habit],
   logs: { h1: [] },
+  logNotes: {},
   past14Days: [TODAY],
   today: TODAY,
   archivingId: null,
@@ -24,6 +25,8 @@ const defaultProps = {
   onToggle: vi.fn(),
   onArchive: vi.fn(),
   onDelete: vi.fn(),
+  onSaveNote: vi.fn(),
+  onReorder: vi.fn(),
 }
 
 describe('HabitTable – empty state', () => {

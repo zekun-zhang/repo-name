@@ -20,7 +20,7 @@ describe('HabitForm', () => {
     await userEvent.click(screen.getByRole('button', { name: /add habit/i }))
 
     expect(onAdd).toHaveBeenCalledOnce()
-    expect(onAdd).toHaveBeenCalledWith('  Read  ', 'weekly', expect.any(String))
+    expect(onAdd).toHaveBeenCalledWith('  Read  ', 'weekly', expect.any(String), undefined, undefined)
   })
 
   it('does not call onAdd when name is empty', async () => {

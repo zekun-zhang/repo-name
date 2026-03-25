@@ -31,7 +31,6 @@ function createApp(options = {}) {
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. same-origin, curl)
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true)
         } else {
@@ -41,7 +40,6 @@ function createApp(options = {}) {
     }),
   )
 
-  // Limit body size to prevent memory exhaustion
   app.use(express.json({ limit: '10kb' }))
 
   // Rate limit: 200 requests per minute per IP
@@ -61,7 +59,7 @@ function createApp(options = {}) {
       const raw = await fs.readFile(dataFile, 'utf-8')
       return JSON.parse(raw)
     } catch {
-      return { habits: [], logs: {} }
+      return { habits: [], logs: {}, logNotes: {} }
     }
   }
 
@@ -73,6 +71,8 @@ function createApp(options = {}) {
   const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
   const HABIT_NAME_MAX = 100
+  const CATEGORY_MAX = 50
+  const VALID_FREQUENCIES = ['daily', 'weekly', 'weekdays', 'weekends']
 
   function validateHabit(body) {
     if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
@@ -81,11 +81,23 @@ function createApp(options = {}) {
     if (body.name.length > HABIT_NAME_MAX) {
       return `name must be ${HABIT_NAME_MAX} chars or fewer`
     }
-    if (!['daily', 'weekly'].includes(body.frequency)) {
-      return 'frequency must be "daily" or "weekly"'
+    if (!VALID_FREQUENCIES.includes(body.frequency)) {
+      return `frequency must be one of: ${VALID_FREQUENCIES.join(', ')}`
     }
     if (body.color && !HEX_COLOR.test(body.color)) {
       return 'color must be a valid hex color (e.g. #6366f1)'
+    }
+    if (body.category && typeof body.category !== 'string') {
+      return 'category must be a string'
+    }
+    if (body.category && body.category.length > CATEGORY_MAX) {
+      return `category must be ${CATEGORY_MAX} chars or fewer`
+    }
+    if (body.icon && typeof body.icon !== 'string') {
+      return 'icon must be a string'
+    }
+    if (body.icon && [...body.icon].length > 2) {
+      return 'icon must be a single emoji or character'
     }
     return null
   }
@@ -93,7 +105,11 @@ function createApp(options = {}) {
   app.get('/api/habits', async (_req, res) => {
     try {
       const data = await readData()
-      res.json(data)
+      res.json({
+        habits: data.habits || [],
+        logs: data.logs || {},
+        logNotes: data.logNotes || {},
+      })
     } catch (err) {
       console.error('[GET /api/habits]', err)
       res.status(500).json({ error: 'Failed to read habits' })
@@ -109,9 +125,13 @@ function createApp(options = {}) {
       name: req.body.name.trim(),
       frequency: req.body.frequency,
       color: req.body.color || '#6366f1',
+      icon: req.body.icon || undefined,
+      category: req.body.category?.trim() || undefined,
       createdAt: req.body.createdAt || new Date().toISOString(),
       archived: false,
     }
+    // Remove undefined fields
+    Object.keys(habit).forEach((k) => habit[k] === undefined && delete habit[k])
 
     try {
       await withLock(async () => {
@@ -123,6 +143,29 @@ function createApp(options = {}) {
     } catch (err) {
       console.error('[POST /api/habits]', err)
       res.status(500).json({ error: 'Failed to save habit' })
+    }
+  })
+
+  // Reorder must come before /:id routes to avoid conflict
+  app.put('/api/habits/reorder', async (req, res) => {
+    const { orderedIds } = req.body
+    if (!Array.isArray(orderedIds) || !orderedIds.every((id) => typeof id === 'string')) {
+      return res.status(400).json({ error: 'orderedIds must be an array of strings' })
+    }
+    try {
+      await withLock(async () => {
+        const data = await readData()
+        const habitMap = new Map(data.habits.map((h) => [h.id, h]))
+        const reordered = orderedIds.map((id) => habitMap.get(id)).filter(Boolean)
+        const reorderedSet = new Set(orderedIds)
+        const rest = data.habits.filter((h) => !reorderedSet.has(h.id))
+        data.habits = [...reordered, ...rest]
+        await writeData(data)
+      })
+      res.json({ ok: true })
+    } catch (err) {
+      console.error('[PUT /api/habits/reorder]', err)
+      res.status(500).json({ error: 'Failed to reorder habits' })
     }
   })
 
@@ -153,6 +196,40 @@ function createApp(options = {}) {
     }
   })
 
+  app.post('/api/logs/notes', async (req, res) => {
+    const { habitId, date, note } = req.body
+    if (!habitId || typeof habitId !== 'string') {
+      return res.status(400).json({ error: 'habitId is required' })
+    }
+    if (!date || !DATE_RE.test(date)) {
+      return res.status(400).json({ error: 'date must be YYYY-MM-DD' })
+    }
+    if (note !== undefined && typeof note !== 'string') {
+      return res.status(400).json({ error: 'note must be a string' })
+    }
+    if (note && note.length > 500) {
+      return res.status(400).json({ error: 'note must be 500 chars or fewer' })
+    }
+
+    try {
+      await withLock(async () => {
+        const data = await readData()
+        if (!data.logNotes) data.logNotes = {}
+        if (!data.logNotes[habitId]) data.logNotes[habitId] = {}
+        if (note?.trim()) {
+          data.logNotes[habitId][date] = note.trim()
+        } else {
+          delete data.logNotes[habitId][date]
+        }
+        await writeData(data)
+      })
+      res.json({ ok: true })
+    } catch (err) {
+      console.error('[POST /api/logs/notes]', err)
+      res.status(500).json({ error: 'Failed to save note' })
+    }
+  })
+
   app.post('/api/habits/:id/archive', async (req, res) => {
     const { id } = req.params
     try {
@@ -178,12 +255,42 @@ function createApp(options = {}) {
         data.habits = data.habits.filter((h) => h.id !== id)
         const { [id]: _removed, ...restLogs } = data.logs
         data.logs = restLogs
+        if (data.logNotes) {
+          const { [id]: _removedNotes, ...restNotes } = data.logNotes
+          data.logNotes = restNotes
+        }
         await writeData(data)
       })
       res.status(204).end()
     } catch (err) {
       console.error('[DELETE /api/habits/:id]', err)
       res.status(500).json({ error: 'Failed to delete habit' })
+    }
+  })
+
+  app.get('/api/export/csv', async (_req, res) => {
+    try {
+      const data = await readData()
+      const lines = ['habit_id,habit_name,category,frequency,date,completed']
+      for (const habit of data.habits) {
+        if (habit.archived) continue
+        const dates = new Set(data.logs[habit.id] || [])
+        const category = habit.category ? `"${habit.category.replace(/"/g, '""')}"` : ''
+        for (let i = 0; i < 365; i++) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const dateStr = d.toISOString().slice(0, 10)
+          lines.push(
+            `${habit.id},"${habit.name.replace(/"/g, '""')}",${category},${habit.frequency},${dateStr},${dates.has(dateStr) ? 1 : 0}`,
+          )
+        }
+      }
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      res.setHeader('Content-Disposition', 'attachment; filename="habit-garden-export.csv"')
+      res.send(lines.join('\n'))
+    } catch (err) {
+      console.error('[GET /api/export/csv]', err)
+      res.status(500).json({ error: 'Failed to export' })
     }
   })
 
