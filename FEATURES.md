@@ -133,6 +133,18 @@ Phase 1 (Quick Wins)          Phase 2 (Engagement)         Phase 3 (Scale)
 
 ---
 
+## Extended Feature Proposals
+
+See **[NEW_FEATURES.md](./NEW_FEATURES.md)** for 15 additional creative features including:
+- Streak Shields & Vacation Mode, Habit Health Score, Habit Stacking/Routines
+- Failure Recovery Dashboard, Smart Rest Days, Mood & Energy Correlation
+- Habit Experiments (30-Day Trials), Insights Engine, Micro-Habits
+- Weekly Review Wizard, Keyboard Shortcuts, and more
+
+That document includes a combined implementation roadmap merging both existing and new features across 5 sprints.
+
+---
+
 ## Decision Log
 
 | Decision | Rationale |
