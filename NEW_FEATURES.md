@@ -1,7 +1,8 @@
 # Habit Garden — New Feature Proposals & Backlog
 
-> Creative features beyond the existing roadmap (see `FEATURES.md` for the original 16 planned features).
-> Each feature includes **what** it does, **why** it matters, **effort** estimate, and **dependencies**.
+> **DEPRECATED:** This document has been merged into [`FEATURES.md`](./FEATURES.md),
+> which is now the single source of truth for all planned features.
+> See `FEATURES.md` for the consolidated roadmap with 35 features across 5 sprints.
 
 ---
 
