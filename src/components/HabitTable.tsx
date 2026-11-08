@@ -1,4 +1,4 @@
-import type { Habit, HabitLog } from '../types'
+import type { Frequency, Habit, HabitLog } from '../types'
 import { HabitRow } from './HabitRow'
 
 type Props = {
@@ -7,6 +7,10 @@ type Props = {
   past14Days: string[]
   today: string
   onToggle: (habitId: string, date: string) => void
+  onEdit: (
+    habitId: string,
+    fields: { name?: string; frequency?: Frequency; color?: string },
+  ) => void
   onArchive: (habitId: string) => void
   onDelete: (habitId: string) => void
 }
@@ -17,6 +21,7 @@ export function HabitTable({
   past14Days,
   today,
   onToggle,
+  onEdit,
   onArchive,
   onDelete,
 }: Props) {
@@ -68,6 +73,7 @@ export function HabitTable({
                 past14Days={past14Days}
                 today={today}
                 onToggle={onToggle}
+                onEdit={onEdit}
                 onArchive={onArchive}
                 onDelete={onDelete}
               />

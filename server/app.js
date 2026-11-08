@@ -50,6 +50,22 @@ function createApp(options = {}) {
     return null
   }
 
+  function validateHabitUpdate(body) {
+    if (body.name !== undefined) {
+      if (typeof body.name !== 'string' || !body.name.trim()) {
+        return 'name must be a non-empty string'
+      }
+      if (body.name.length > 100) return 'name must be 100 chars or fewer'
+    }
+    if (body.frequency !== undefined && !['daily', 'weekly'].includes(body.frequency)) {
+      return 'frequency must be "daily" or "weekly"'
+    }
+    if (body.color !== undefined && !HEX_COLOR.test(body.color)) {
+      return 'color must be a valid hex color (e.g. #6366f1)'
+    }
+    return null
+  }
+
   app.get('/api/habits', async (_req, res) => {
     const data = await readData()
     res.json(data)
@@ -74,6 +90,30 @@ function createApp(options = {}) {
       await writeData(data)
     })
     res.status(201).json(habit)
+  })
+
+  app.put('/api/habits/:id', async (req, res) => {
+    const error = validateHabitUpdate(req.body)
+    if (error) return res.status(400).json({ error })
+
+    const { id } = req.params
+    let updated = null
+
+    await withLock(async () => {
+      const data = await readData()
+      const idx = data.habits.findIndex((h) => h.id === id)
+      if (idx === -1) return
+      const habit = data.habits[idx]
+      if (req.body.name !== undefined) habit.name = req.body.name.trim()
+      if (req.body.frequency !== undefined) habit.frequency = req.body.frequency
+      if (req.body.color !== undefined) habit.color = req.body.color
+      data.habits[idx] = habit
+      updated = habit
+      await writeData(data)
+    })
+
+    if (!updated) return res.status(404).json({ error: 'habit not found' })
+    res.json(updated)
   })
 
   app.post('/api/logs/toggle', async (req, res) => {
@@ -104,6 +144,18 @@ function createApp(options = {}) {
       const data = await readData()
       data.habits = data.habits.map((h) =>
         h.id === id ? { ...h, archived: true } : h,
+      )
+      await writeData(data)
+    })
+    res.json({ id })
+  })
+
+  app.post('/api/habits/:id/unarchive', async (req, res) => {
+    const { id } = req.params
+    await withLock(async () => {
+      const data = await readData()
+      data.habits = data.habits.map((h) =>
+        h.id === id ? { ...h, archived: false } : h,
       )
       await writeData(data)
     })

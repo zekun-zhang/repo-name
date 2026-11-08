@@ -33,6 +33,11 @@ export function useHabits() {
     [habits],
   )
 
+  const archivedHabits = useMemo(
+    () => habits.filter((h) => h.archived),
+    [habits],
+  )
+
   function addHabit(name: string, frequency: Frequency, color: string) {
     const newHabit: Habit = {
       id: generateId(),
@@ -49,6 +54,20 @@ export function useHabits() {
     api.createHabit(newHabit).catch(() => {
       setHabits(prevHabits)
       showToast('Failed to save habit. Please try again.')
+    })
+  }
+
+  function editHabit(
+    habitId: string,
+    fields: { name?: string; frequency?: Frequency; color?: string },
+  ) {
+    const prevHabits = habits
+    setHabits((prev) =>
+      prev.map((h) => (h.id === habitId ? { ...h, ...fields } : h)),
+    )
+    api.updateHabit(habitId, fields).catch(() => {
+      setHabits(prevHabits)
+      showToast('Failed to update habit. Please try again.')
     })
   }
 
@@ -76,6 +95,17 @@ export function useHabits() {
     })
   }
 
+  function unarchive(habitId: string) {
+    const prevHabits = habits
+    setHabits((prev) =>
+      prev.map((h) => (h.id === habitId ? { ...h, archived: false } : h)),
+    )
+    api.unarchiveHabit(habitId).catch(() => {
+      setHabits(prevHabits)
+      showToast('Failed to unarchive habit.')
+    })
+  }
+
   function remove(habitId: string) {
     const prevHabits = habits
     const prevLogs = logs
@@ -94,13 +124,16 @@ export function useHabits() {
 
   return {
     habits: activeHabits,
+    archivedHabits,
     logs,
     loading,
     error,
     toast,
     addHabit,
+    editHabit,
     toggle,
     archive,
+    unarchive,
     remove,
   }
 }

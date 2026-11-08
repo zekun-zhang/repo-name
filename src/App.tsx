@@ -7,13 +7,16 @@ import { todayISO, generatePastNDays } from './utils'
 function App() {
   const {
     habits,
+    archivedHabits,
     logs,
     loading,
     error,
     toast,
     addHabit,
+    editHabit,
     toggle,
     archive,
+    unarchive,
     remove,
   } = useHabits()
 
@@ -63,15 +66,41 @@ function App() {
 
       <main className="layout">
         <HabitForm onAdd={addHabit} />
-        <HabitTable
-          habits={habits}
-          logs={logs}
-          past14Days={past14Days}
-          today={today}
-          onToggle={toggle}
-          onArchive={archive}
-          onDelete={handleDelete}
-        />
+        <div className="habits-column">
+          <HabitTable
+            habits={habits}
+            logs={logs}
+            past14Days={past14Days}
+            today={today}
+            onToggle={toggle}
+            onEdit={editHabit}
+            onArchive={archive}
+            onDelete={handleDelete}
+          />
+          {archivedHabits.length > 0 && (
+            <section className="card archived-card">
+              <h2>Archived</h2>
+              <ul className="archived-list">
+                {archivedHabits.map((h) => (
+                  <li key={h.id} className="archived-item">
+                    <span
+                      className="habit-color"
+                      style={{ backgroundColor: h.color }}
+                    />
+                    <span className="archived-name">{h.name}</span>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => unarchive(h.id)}
+                    >
+                      Unarchive
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
       </main>
     </div>
   )
