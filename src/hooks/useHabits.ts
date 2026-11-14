@@ -64,7 +64,14 @@ export function useHabits() {
   ) {
     const prevHabits = habits
     setHabits((prev) =>
-      prev.map((h) => (h.id === habitId ? { ...h, ...fields } : h)),
+      prev.map((h) => {
+        if (h.id !== habitId) return h
+        const updated = { ...h, ...fields }
+        if (Array.isArray(fields.activeDays) && fields.activeDays.length === 0) {
+          delete updated.activeDays
+        }
+        return updated
+      }),
     )
     api.updateHabit(habitId, fields).catch(() => {
       setHabits(prevHabits)

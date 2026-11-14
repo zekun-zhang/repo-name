@@ -26,7 +26,7 @@ export function calculateStreak(dates: string[], frequency: 'daily' | 'weekly', 
 
   for (;;) {
     const dayStr = cursor.toISOString().slice(0, 10)
-    if (activeDays && !activeDays.includes(cursor.getDay())) {
+    if (activeDays && !activeDays.includes(cursor.getUTCDay())) {
       cursor.setDate(cursor.getDate() - 1)
       continue
     }

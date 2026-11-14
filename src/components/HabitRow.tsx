@@ -7,7 +7,7 @@ const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
 
 function isDayActive(dateStr: string, activeDays?: number[]): boolean {
   if (!activeDays) return true
-  const dayOfWeek = new Date(dateStr).getDay()
+  const dayOfWeek = new Date(dateStr).getUTCDay()
   return activeDays.includes(dayOfWeek)
 }
 
@@ -71,7 +71,7 @@ export function HabitRow({
     const activeDays =
       editFrequency === 'daily' && editActiveDays.length < 7
         ? editActiveDays
-        : undefined
+        : []
     onEdit(habit.id, {
       name: editName.trim(),
       frequency: editFrequency,
