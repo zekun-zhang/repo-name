@@ -38,7 +38,7 @@ export function useHabits() {
     [habits],
   )
 
-  function addHabit(name: string, frequency: Frequency, color: string) {
+  function addHabit(name: string, frequency: Frequency, color: string, activeDays?: number[]) {
     const newHabit: Habit = {
       id: generateId(),
       name: name.trim(),
@@ -46,6 +46,7 @@ export function useHabits() {
       color,
       createdAt: new Date().toISOString(),
       archived: false,
+      ...(activeDays ? { activeDays } : {}),
     }
 
     const prevHabits = habits
@@ -59,7 +60,7 @@ export function useHabits() {
 
   function editHabit(
     habitId: string,
-    fields: { name?: string; frequency?: Frequency; color?: string },
+    fields: { name?: string; frequency?: Frequency; color?: string; activeDays?: number[] },
   ) {
     const prevHabits = habits
     setHabits((prev) =>

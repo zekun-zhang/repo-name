@@ -197,10 +197,10 @@ describe('POST /api/habits/:id/archive', () => {
     expect(stored.habits[0].archived).toBe(true)
   })
 
-  test('does nothing for nonexistent id', async () => {
+  test('returns 404 for nonexistent id', async () => {
     const { app } = makeApp()
     const res = await request(app).post('/api/habits/nonexistent/archive')
-    expect(res.statusCode).toBe(200)
+    expect(res.statusCode).toBe(404)
   })
 })
 

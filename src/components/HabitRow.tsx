@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import type { Frequency, Habit } from '../types'
-import { calculateStreak } from '../utils'
+import { calculateStreak, getHabitAge } from '../utils'
+
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
+
+function isDayActive(dateStr: string, activeDays?: number[]): boolean {
+  if (!activeDays) return true
+  const dayOfWeek = new Date(dateStr).getDay()
+  return activeDays.includes(dayOfWeek)
+}
 
 type Props = {
   habit: Habit
@@ -10,7 +19,7 @@ type Props = {
   onToggle: (habitId: string, date: string) => void
   onEdit: (
     habitId: string,
-    fields: { name?: string; frequency?: Frequency; color?: string },
+    fields: { name?: string; frequency?: Frequency; color?: string; activeDays?: number[] },
   ) => void
   onArchive: (habitId: string) => void
   onDelete: (habitId: string) => void
@@ -30,26 +39,44 @@ export function HabitRow({
   const [editName, setEditName] = useState(habit.name)
   const [editFrequency, setEditFrequency] = useState<Frequency>(habit.frequency)
   const [editColor, setEditColor] = useState(habit.color)
+  const [editActiveDays, setEditActiveDays] = useState<number[]>(habit.activeDays ?? ALL_DAYS)
 
-  const streak = calculateStreak(dates, habit.frequency)
+  const streak = calculateStreak(dates, habit.frequency, habit.activeDays)
+  const age = getHabitAge(habit.createdAt)
   const streakLabel =
     habit.frequency === 'weekly'
       ? `${streak} week${streak === 1 ? '' : 's'}`
       : `${streak} day${streak === 1 ? '' : 's'}`
 
+  function toggleEditDay(day: number) {
+    setEditActiveDays((prev) => {
+      if (prev.includes(day)) {
+        if (prev.length <= 1) return prev
+        return prev.filter((d) => d !== day)
+      }
+      return [...prev, day].sort()
+    })
+  }
+
   function startEdit() {
     setEditName(habit.name)
     setEditFrequency(habit.frequency)
     setEditColor(habit.color)
+    setEditActiveDays(habit.activeDays ?? ALL_DAYS)
     setEditing(true)
   }
 
   function saveEdit() {
     if (!editName.trim()) return
+    const activeDays =
+      editFrequency === 'daily' && editActiveDays.length < 7
+        ? editActiveDays
+        : undefined
     onEdit(habit.id, {
       name: editName.trim(),
       frequency: editFrequency,
       color: editColor,
+      activeDays,
     })
     setEditing(false)
   }
@@ -88,6 +115,20 @@ export function HabitRow({
               value={editColor}
               onChange={(e) => setEditColor(e.target.value)}
             />
+            {editFrequency === 'daily' && (
+              <div className="day-picker">
+                {DAY_LABELS.map((label, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`day-picker-btn${editActiveDays.includes(i) ? ' day-picker-btn-active' : ''}`}
+                    onClick={() => toggleEditDay(i)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               type="button"
               className="ghost-button save-btn"
@@ -120,8 +161,14 @@ export function HabitRow({
             <div className="habit-name">{habit.name}</div>
             <div className="habit-meta">
               {habit.frequency === 'daily' ? 'Daily' : 'Weekly goal'}
+              {habit.activeDays && (
+                <span className="active-days-hint">
+                  {' '}{habit.activeDays.map((d) => DAY_LABELS[d]).join('')}
+                </span>
+              )}
             </div>
           </div>
+          <span className={`age-badge age-badge-${age.tier}`}>{age.label}</span>
         </div>
       </td>
       <td>
@@ -130,6 +177,14 @@ export function HabitRow({
       {past14Days.map((d) => {
         const checked = dates.includes(d)
         const isToday = d === today
+        const active = isDayActive(d, habit.activeDays)
+        if (!active) {
+          return (
+            <td key={d}>
+              <div className="day-cell day-cell-inactive" />
+            </td>
+          )
+        }
         return (
           <td key={d}>
             <button

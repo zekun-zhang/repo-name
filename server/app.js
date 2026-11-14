@@ -36,6 +36,19 @@ function createApp(options = {}) {
   const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
   const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
+  function validateActiveDays(activeDays) {
+    if (activeDays === undefined || activeDays === null) return null
+    if (!Array.isArray(activeDays)) return 'activeDays must be an array'
+    if (activeDays.length === 0) return null
+    for (const d of activeDays) {
+      if (typeof d !== 'number' || d < 0 || d > 6 || !Number.isInteger(d)) {
+        return 'activeDays values must be integers 0-6'
+      }
+    }
+    if (new Set(activeDays).size !== activeDays.length) return 'activeDays must not contain duplicates'
+    return null
+  }
+
   function validateHabit(body) {
     if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
       return 'name is required'
@@ -47,6 +60,8 @@ function createApp(options = {}) {
     if (body.color && !HEX_COLOR.test(body.color)) {
       return 'color must be a valid hex color (e.g. #6366f1)'
     }
+    const adErr = validateActiveDays(body.activeDays)
+    if (adErr) return adErr
     return null
   }
 
@@ -62,6 +77,10 @@ function createApp(options = {}) {
     }
     if (body.color !== undefined && !HEX_COLOR.test(body.color)) {
       return 'color must be a valid hex color (e.g. #6366f1)'
+    }
+    if (body.activeDays !== undefined) {
+      const adErr = validateActiveDays(body.activeDays)
+      if (adErr) return adErr
     }
     return null
   }
@@ -82,6 +101,7 @@ function createApp(options = {}) {
       color: req.body.color || '#6366f1',
       createdAt: req.body.createdAt || new Date().toISOString(),
       archived: false,
+      ...(req.body.activeDays?.length ? { activeDays: req.body.activeDays } : {}),
     }
 
     await withLock(async () => {
@@ -107,6 +127,13 @@ function createApp(options = {}) {
       if (req.body.name !== undefined) habit.name = req.body.name.trim()
       if (req.body.frequency !== undefined) habit.frequency = req.body.frequency
       if (req.body.color !== undefined) habit.color = req.body.color
+      if (req.body.activeDays !== undefined) {
+        if (req.body.activeDays === null || req.body.activeDays.length === 0) {
+          delete habit.activeDays
+        } else {
+          habit.activeDays = req.body.activeDays
+        }
+      }
       data.habits[idx] = habit
       updated = habit
       await writeData(data)
@@ -140,25 +167,35 @@ function createApp(options = {}) {
 
   app.post('/api/habits/:id/archive', async (req, res) => {
     const { id } = req.params
+    let found = false
     await withLock(async () => {
       const data = await readData()
-      data.habits = data.habits.map((h) =>
-        h.id === id ? { ...h, archived: true } : h,
-      )
-      await writeData(data)
+      found = data.habits.some((h) => h.id === id)
+      if (found) {
+        data.habits = data.habits.map((h) =>
+          h.id === id ? { ...h, archived: true } : h,
+        )
+        await writeData(data)
+      }
     })
+    if (!found) return res.status(404).json({ error: 'habit not found' })
     res.json({ id })
   })
 
   app.post('/api/habits/:id/unarchive', async (req, res) => {
     const { id } = req.params
+    let found = false
     await withLock(async () => {
       const data = await readData()
-      data.habits = data.habits.map((h) =>
-        h.id === id ? { ...h, archived: false } : h,
-      )
-      await writeData(data)
+      found = data.habits.some((h) => h.id === id)
+      if (found) {
+        data.habits = data.habits.map((h) =>
+          h.id === id ? { ...h, archived: false } : h,
+        )
+        await writeData(data)
+      }
     })
+    if (!found) return res.status(404).json({ error: 'habit not found' })
     res.json({ id })
   })
 

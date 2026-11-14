@@ -1,20 +1,47 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Frequency } from '../types'
 
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
+
 type Props = {
-  onAdd: (name: string, frequency: Frequency, color: string) => void
+  onAdd: (name: string, frequency: Frequency, color: string, activeDays?: number[]) => void
+  prefill?: { name: string; color: string } | null
 }
 
-export function HabitForm({ onAdd }: Props) {
+export function HabitForm({ onAdd, prefill }: Props) {
   const [name, setName] = useState('')
   const [frequency, setFrequency] = useState<Frequency>('daily')
   const [color, setColor] = useState('#6366f1')
+  const [selectedDays, setSelectedDays] = useState<number[]>(ALL_DAYS)
+
+  useEffect(() => {
+    if (prefill) {
+      setName(prefill.name)
+      setColor(prefill.color)
+    }
+  }, [prefill])
+
+  function toggleDay(day: number) {
+    setSelectedDays((prev) => {
+      if (prev.includes(day)) {
+        if (prev.length <= 1) return prev
+        return prev.filter((d) => d !== day)
+      }
+      return [...prev, day].sort()
+    })
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
-    onAdd(name, frequency, color)
+    const activeDays =
+      frequency === 'daily' && selectedDays.length < 7
+        ? selectedDays
+        : undefined
+    onAdd(name, frequency, color, activeDays)
     setName('')
+    setSelectedDays(ALL_DAYS)
   }
 
   return (
@@ -50,6 +77,23 @@ export function HabitForm({ onAdd }: Props) {
             />
           </div>
         </div>
+        {frequency === 'daily' && (
+          <div className="field">
+            <label>Active days</label>
+            <div className="day-picker">
+              {DAY_LABELS.map((label, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`day-picker-btn${selectedDays.includes(i) ? ' day-picker-btn-active' : ''}`}
+                  onClick={() => toggleDay(i)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button type="submit" className="primary-button">
           Add habit
         </button>

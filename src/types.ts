@@ -7,6 +7,7 @@ export type Habit = {
   color: string
   createdAt: string
   archived: boolean
+  activeDays?: number[]
 }
 
 export type HabitLog = {
