@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Frequency, Habit } from '../types'
-import { calculateStreak } from '../utils'
+import { calculateStreak, calculateMomentum, getHabitAge } from '../utils'
 
 type Props = {
   habit: Habit
@@ -36,6 +36,9 @@ export function HabitRow({
     habit.frequency === 'weekly'
       ? `${streak} week${streak === 1 ? '' : 's'}`
       : `${streak} day${streak === 1 ? '' : 's'}`
+  const momentum = calculateMomentum(dates)
+  const momentumPct = Math.round(momentum * 100)
+  const age = getHabitAge(habit.createdAt)
 
   function startEdit() {
     setEditName(habit.name)
@@ -117,7 +120,10 @@ export function HabitRow({
             style={{ backgroundColor: habit.color }}
           />
           <div>
-            <div className="habit-name">{habit.name}</div>
+            <div className="habit-name">
+              {habit.name}
+              <span className={`age-badge age-tier-${age.tier}`}>{age.label}</span>
+            </div>
             <div className="habit-meta">
               {habit.frequency === 'daily' ? 'Daily' : 'Weekly goal'}
             </div>
@@ -125,7 +131,18 @@ export function HabitRow({
         </div>
       </td>
       <td>
-        <span className="streak-pill">{streakLabel}</span>
+        <div className="momentum-cell">
+          <span className="streak-pill">{streakLabel}</span>
+          <div className="momentum-bar" title={`${momentumPct}% momentum`}>
+            <div
+              className="momentum-fill"
+              style={{
+                width: `${momentumPct}%`,
+                backgroundColor: habit.color,
+              }}
+            />
+          </div>
+        </div>
       </td>
       {past14Days.map((d) => {
         const checked = dates.includes(d)

@@ -1,14 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Frequency } from '../types'
 
 type Props = {
   onAdd: (name: string, frequency: Frequency, color: string) => void
+  prefillName?: string
+  prefillColor?: string
 }
 
-export function HabitForm({ onAdd }: Props) {
+export function HabitForm({ onAdd, prefillName, prefillColor }: Props) {
   const [name, setName] = useState('')
   const [frequency, setFrequency] = useState<Frequency>('daily')
   const [color, setColor] = useState('#6366f1')
+
+  useEffect(() => {
+    if (prefillName) setName(prefillName)
+    if (prefillColor) setColor(prefillColor)
+  }, [prefillName, prefillColor])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

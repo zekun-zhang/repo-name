@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import './App.css'
 import { useHabits } from './hooks/useHabits'
 import { HabitForm } from './components/HabitForm'
@@ -20,8 +21,16 @@ function App() {
     remove,
   } = useHabits()
 
+  const [prefillName, setPrefillName] = useState<string>()
+  const [prefillColor, setPrefillColor] = useState<string>()
+
   const today = todayISO()
   const past14Days = generatePastNDays(14, today)
+
+  function handlePrefill(name: string, color: string) {
+    setPrefillName(name)
+    setPrefillColor(color)
+  }
 
   function handleDelete(habitId: string) {
     if (!window.confirm('Delete this habit and its history?')) return
@@ -65,7 +74,7 @@ function App() {
       </header>
 
       <main className="layout">
-        <HabitForm onAdd={addHabit} />
+        <HabitForm onAdd={addHabit} prefillName={prefillName} prefillColor={prefillColor} />
         <div className="habits-column">
           <HabitTable
             habits={habits}
@@ -76,6 +85,7 @@ function App() {
             onEdit={editHabit}
             onArchive={archive}
             onDelete={handleDelete}
+            onPrefill={handlePrefill}
           />
           {archivedHabits.length > 0 && (
             <section className="card archived-card">

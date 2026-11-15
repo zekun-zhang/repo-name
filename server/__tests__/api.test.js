@@ -197,10 +197,81 @@ describe('POST /api/habits/:id/archive', () => {
     expect(stored.habits[0].archived).toBe(true)
   })
 
-  test('does nothing for nonexistent id', async () => {
+  test('returns 404 for nonexistent id', async () => {
     const { app } = makeApp()
     const res = await request(app).post('/api/habits/nonexistent/archive')
+    expect(res.statusCode).toBe(404)
+  })
+})
+
+describe('PUT /api/habits/:id', () => {
+  test('updates a habit name', async () => {
+    const { app, dataFile } = makeApp()
+    await request(app).post('/api/habits').send(validHabit)
+
+    const res = await request(app).put('/api/habits/h1').send({ name: 'Write' })
     expect(res.statusCode).toBe(200)
+    expect(res.body.name).toBe('Write')
+
+    const stored = JSON.parse(fs.readFileSync(dataFile, 'utf-8'))
+    expect(stored.habits[0].name).toBe('Write')
+  })
+
+  test('updates frequency and color', async () => {
+    const { app } = makeApp()
+    await request(app).post('/api/habits').send(validHabit)
+
+    const res = await request(app)
+      .put('/api/habits/h1')
+      .send({ frequency: 'weekly', color: '#ff0000' })
+    expect(res.statusCode).toBe(200)
+    expect(res.body.frequency).toBe('weekly')
+    expect(res.body.color).toBe('#ff0000')
+  })
+
+  test('returns 404 for nonexistent habit', async () => {
+    const { app } = makeApp()
+    const res = await request(app).put('/api/habits/nonexistent').send({ name: 'Test' })
+    expect(res.statusCode).toBe(404)
+  })
+
+  test('rejects invalid frequency', async () => {
+    const { app } = makeApp()
+    await request(app).post('/api/habits').send(validHabit)
+
+    const res = await request(app).put('/api/habits/h1').send({ frequency: 'monthly' })
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toMatch(/frequency/i)
+  })
+
+  test('rejects empty name', async () => {
+    const { app } = makeApp()
+    await request(app).post('/api/habits').send(validHabit)
+
+    const res = await request(app).put('/api/habits/h1').send({ name: '   ' })
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toMatch(/name/i)
+  })
+})
+
+describe('POST /api/habits/:id/unarchive', () => {
+  test('unarchives a habit', async () => {
+    const { app, dataFile } = makeApp()
+    await request(app).post('/api/habits').send(validHabit)
+    await request(app).post('/api/habits/h1/archive')
+
+    const res = await request(app).post('/api/habits/h1/unarchive')
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toEqual({ id: 'h1' })
+
+    const stored = JSON.parse(fs.readFileSync(dataFile, 'utf-8'))
+    expect(stored.habits[0].archived).toBe(false)
+  })
+
+  test('returns 404 for nonexistent habit', async () => {
+    const { app } = makeApp()
+    const res = await request(app).post('/api/habits/nonexistent/unarchive')
+    expect(res.statusCode).toBe(404)
   })
 })
 

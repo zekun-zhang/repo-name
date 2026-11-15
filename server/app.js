@@ -140,25 +140,33 @@ function createApp(options = {}) {
 
   app.post('/api/habits/:id/archive', async (req, res) => {
     const { id } = req.params
+    let found = false
     await withLock(async () => {
       const data = await readData()
+      found = data.habits.some((h) => h.id === id)
+      if (!found) return
       data.habits = data.habits.map((h) =>
         h.id === id ? { ...h, archived: true } : h,
       )
       await writeData(data)
     })
+    if (!found) return res.status(404).json({ error: 'habit not found' })
     res.json({ id })
   })
 
   app.post('/api/habits/:id/unarchive', async (req, res) => {
     const { id } = req.params
+    let found = false
     await withLock(async () => {
       const data = await readData()
+      found = data.habits.some((h) => h.id === id)
+      if (!found) return
       data.habits = data.habits.map((h) =>
         h.id === id ? { ...h, archived: false } : h,
       )
       await writeData(data)
     })
+    if (!found) return res.status(404).json({ error: 'habit not found' })
     res.json({ id })
   })
 

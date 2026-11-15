@@ -68,3 +68,46 @@ export function generatePastNDays(n: number, today: string): string[] {
   }
   return days
 }
+
+export function calculateMomentum(dates: string[]): number {
+  if (!dates.length) return 0
+  const today = new Date(todayISO())
+  const dateSet = new Set(dates)
+  let weightedSum = 0
+  let weightTotal = 0
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const weight = Math.pow(0.92, i)
+    weightTotal += weight
+    if (dateSet.has(d.toISOString().slice(0, 10))) {
+      weightedSum += weight
+    }
+  }
+  return weightTotal > 0 ? weightedSum / weightTotal : 0
+}
+
+export function getHabitAge(createdAt: string): { label: string; tier: number } {
+  const created = new Date(createdAt)
+  const now = new Date()
+  const diffMs = now.getTime() - created.getTime()
+  const days = Math.max(0, Math.floor(diffMs / 86400000))
+
+  if (days >= 365) {
+    const years = Math.floor(days / 365)
+    return { label: `${years}y`, tier: 4 }
+  }
+  if (days >= 90) {
+    const months = Math.floor(days / 30)
+    return { label: `${months}mo`, tier: 3 }
+  }
+  if (days >= 30) {
+    const months = Math.floor(days / 30)
+    return { label: `${months}mo`, tier: 2 }
+  }
+  if (days >= 7) {
+    const weeks = Math.floor(days / 7)
+    return { label: `${weeks}w`, tier: 1 }
+  }
+  return { label: `${days}d`, tier: 0 }
+}

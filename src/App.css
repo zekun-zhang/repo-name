@@ -413,3 +413,106 @@ body {
   flex: 1;
   text-align: left;
 }
+
+.age-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  vertical-align: middle;
+  border: 1px solid rgba(75, 85, 99, 0.6);
+  color: #9ca3af;
+  background: transparent;
+}
+
+.age-tier-1 {
+  border-color: rgba(74, 222, 128, 0.4);
+  color: #86efac;
+}
+
+.age-tier-2 {
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #86efac;
+  border-width: 2px;
+}
+
+.age-tier-3 {
+  background: rgba(22, 163, 74, 0.2);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #bbf7d0;
+}
+
+.age-tier-4 {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(250, 204, 21, 0.5);
+  color: #fde68a;
+}
+
+.momentum-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.momentum-bar {
+  width: 64px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(31, 41, 55, 0.9);
+  overflow: hidden;
+}
+
+.momentum-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  opacity: 0.8;
+}
+
+.onboarding-text {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #d1d5db;
+  line-height: 1.5;
+}
+
+.starter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.starter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid;
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.starter-chip:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.starter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.onboarding-hint {
+  margin-top: 14px;
+  font-size: 12px;
+  color: #6b7280;
+}

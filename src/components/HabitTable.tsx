@@ -1,6 +1,13 @@
 import type { Frequency, Habit, HabitLog } from '../types'
 import { HabitRow } from './HabitRow'
 
+const STARTER_HABITS = [
+  { name: 'Drink water', color: '#3b82f6' },
+  { name: 'Read 10 pages', color: '#8b5cf6' },
+  { name: '10 min walk', color: '#22c55e' },
+  { name: 'Meditate 5 min', color: '#f59e0b' },
+]
+
 type Props = {
   habits: Habit[]
   logs: HabitLog
@@ -13,6 +20,7 @@ type Props = {
   ) => void
   onArchive: (habitId: string) => void
   onDelete: (habitId: string) => void
+  onPrefill?: (name: string, color: string) => void
 }
 
 export function HabitTable({
@@ -24,15 +32,33 @@ export function HabitTable({
   onEdit,
   onArchive,
   onDelete,
+  onPrefill,
 }: Props) {
   if (habits.length === 0) {
     return (
       <section className="card habits-card">
         <div className="habits-header">
-          <h2>Your habits</h2>
+          <h2>Welcome to Habit Garden</h2>
         </div>
-        <p className="empty-state">
-          No habits yet. Create your first one on the left.
+        <p className="onboarding-text">
+          Grow tiny daily habits into lasting changes. Start small — one habit is better than five.
+        </p>
+        <div className="starter-chips">
+          {STARTER_HABITS.map((s) => (
+            <button
+              key={s.name}
+              type="button"
+              className="starter-chip"
+              style={{ borderColor: s.color, color: s.color }}
+              onClick={() => onPrefill?.(s.name, s.color)}
+            >
+              <span className="starter-dot" style={{ backgroundColor: s.color }} />
+              {s.name}
+            </button>
+          ))}
+        </div>
+        <p className="onboarding-hint">
+          Tap a suggestion or create your own on the left.
         </p>
       </section>
     )
@@ -49,7 +75,7 @@ export function HabitTable({
           <thead>
             <tr>
               <th>Habit</th>
-              <th>Streak</th>
+              <th>Streak / Momentum</th>
               <th colSpan={past14Days.length}>Last 14 days</th>
               <th />
             </tr>
