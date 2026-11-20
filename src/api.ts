@@ -21,7 +21,7 @@ export async function createHabit(habit: Habit): Promise<Habit> {
 
 export async function updateHabit(
   habitId: string,
-  fields: { name?: string; frequency?: string; color?: string },
+  fields: { name?: string; frequency?: string; color?: string; activeDays?: number[] },
 ): Promise<Habit> {
   const res = await fetch(`${API_BASE}/api/habits/${habitId}`, {
     method: 'PUT',

@@ -1,6 +1,13 @@
 import type { Frequency, Habit, HabitLog } from '../types'
 import { HabitRow } from './HabitRow'
 
+const STARTER_HABITS = [
+  { name: 'Drink water', color: '#38bdf8' },
+  { name: 'Read 10 pages', color: '#a78bfa' },
+  { name: '10 min walk', color: '#34d399' },
+  { name: 'Meditate 5 min', color: '#fb923c' },
+]
+
 type Props = {
   habits: Habit[]
   logs: HabitLog
@@ -9,10 +16,11 @@ type Props = {
   onToggle: (habitId: string, date: string) => void
   onEdit: (
     habitId: string,
-    fields: { name?: string; frequency?: Frequency; color?: string },
+    fields: { name?: string; frequency?: Frequency; color?: string; activeDays?: number[] },
   ) => void
   onArchive: (habitId: string) => void
   onDelete: (habitId: string) => void
+  onSuggest?: (prefill: { name: string; color: string }) => void
 }
 
 export function HabitTable({
@@ -24,6 +32,7 @@ export function HabitTable({
   onEdit,
   onArchive,
   onDelete,
+  onSuggest,
 }: Props) {
   if (habits.length === 0) {
     return (
@@ -32,8 +41,26 @@ export function HabitTable({
           <h2>Your habits</h2>
         </div>
         <p className="empty-state">
-          No habits yet. Create your first one on the left.
+          Plant your first habit and watch it grow. Pick a suggestion or create
+          your own.
         </p>
+        <div className="starter-chips">
+          {STARTER_HABITS.map((h) => (
+            <button
+              key={h.name}
+              type="button"
+              className="starter-chip"
+              onClick={() => onSuggest?.(h)}
+            >
+              <span
+                className="starter-chip-dot"
+                style={{ backgroundColor: h.color }}
+              />
+              {h.name}
+            </button>
+          ))}
+        </div>
+        <p className="onboarding-tip">Start small. One habit is better than five.</p>
       </section>
     )
   }

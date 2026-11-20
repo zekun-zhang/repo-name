@@ -13,7 +13,7 @@ export function toggleDateInList(list: string[], date: string): string[] {
   return list.includes(date) ? list.filter((d) => d !== date) : [...list, date]
 }
 
-export function calculateStreak(dates: string[], frequency: 'daily' | 'weekly'): number {
+export function calculateStreak(dates: string[], frequency: 'daily' | 'weekly', activeDays?: number[]): number {
   if (!dates.length) return 0
 
   if (frequency === 'weekly') {
@@ -26,6 +26,10 @@ export function calculateStreak(dates: string[], frequency: 'daily' | 'weekly'):
 
   for (;;) {
     const dayStr = cursor.toISOString().slice(0, 10)
+    if (activeDays && !activeDays.includes(cursor.getUTCDay())) {
+      cursor.setDate(cursor.getDate() - 1)
+      continue
+    }
     if (!sorted.includes(dayStr)) break
     streak += 1
     cursor.setDate(cursor.getDate() - 1)
@@ -57,6 +61,39 @@ function calculateWeeklyStreak(dates: string[]): number {
   }
 
   return streak
+}
+
+export function getHabitAge(createdAt: string): { label: string; tier: 'seedling' | 'sprout' | 'growing' | 'rooted' } {
+  const created = new Date(createdAt)
+  const now = new Date()
+  const diffMs = now.getTime() - created.getTime()
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  let label: string
+  let tier: 'seedling' | 'sprout' | 'growing' | 'rooted'
+
+  if (days < 7) {
+    label = `${days}d`
+    tier = 'seedling'
+  } else if (days < 30) {
+    const weeks = Math.floor(days / 7)
+    label = `${weeks}w`
+    tier = 'seedling'
+  } else if (days < 90) {
+    const months = Math.floor(days / 30)
+    label = `${months}mo`
+    tier = 'sprout'
+  } else if (days < 365) {
+    const months = Math.floor(days / 30)
+    label = `${months}mo`
+    tier = 'growing'
+  } else {
+    const years = Math.floor(days / 365)
+    label = `${years}y`
+    tier = 'rooted'
+  }
+
+  return { label, tier }
 }
 
 export function generatePastNDays(n: number, today: string): string[] {
